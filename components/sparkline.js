@@ -36,6 +36,16 @@ class Sparkline extends St.DrawingArea {
         if (!area.is_visible()) return;
 
         const cr = area.get_context();
+        try {
+            this._draw(cr, area);
+        } finally {
+            // Cairo contexts are not GC-managed in GJS — an undisposed context
+            // leaks the surface on every single repaint.
+            cr.$dispose();
+        }
+    }
+
+    _draw(cr, area) {
         const [width, height] = area.get_surface_size();
 
         cr.save();

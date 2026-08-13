@@ -16,6 +16,17 @@
   - Top-bar ticker cycling (Price, %, Abs, Price + %) with pause-on-hover & right-click pin
   - Live symbol search dialog for equities, ETFs, indices, and crypto
   - Custom Cairo sparklines and main chart view with intraday to 5Y timeframes
-  - Multi-provider registry (Yahoo Finance, Eastmoney, Stooq, CoinGecko, Binance, Frankfurter FX)
+  - Multi-provider registry with per-symbol failover (Yahoo Finance, Eastmoney, CoinGecko, Binance)
+  - Currency conversion via Frankfurter / European Central Bank reference rates (`display-currency`)
+  - Chart comparison mode: 2–3 symbols overlaid as normalized percentage series
   - Session-bound price alerts with silent desktop notifications
   - Local P&L calculations with instant privacy masking toggle (`hide-private-values`)
+  - GNOME Shell overview search provider, Quick Settings pause toggle, configurable menu shortcut
+  - Detachable always-on-top desktop chart widget
+  - Offline grace: last-good quotes persisted to disk, shown greyed with a timestamp
+
+## Data Provider Notes
+
+- All quote providers are free and require no API key.
+- Yahoo Finance quotes come from the keyless `v8/finance/chart` endpoint; `v7/finance/quote` requires a cookie/crumb handshake and is not used.
+- Stooq was evaluated and dropped: its CSV endpoints return HTTP 404.

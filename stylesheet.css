@@ -171,3 +171,201 @@
     border-radius: 12px;
     margin-right: 6px;
 }
+
+/* --- Panel ticker --- */
+
+.market-pulse-ticker-box {
+    spacing: 4px;
+    max-width: 260px;
+}
+
+/* --- Menu chrome --- */
+
+.market-pulse-menu-footer {
+    padding: 6px 12px;
+    spacing: 8px;
+}
+
+.market-pulse-freshness-label {
+    font-size: 11px;
+    opacity: 0.6;
+}
+
+.market-pulse-settings-link-btn {
+    padding: 4px 10px;
+    font-size: 12px;
+    border-radius: 6px;
+}
+
+.market-pulse-symbol-list {
+    spacing: 2px;
+    padding: 2px 0;
+}
+
+.market-pulse-empty-list-label {
+    padding: 24px 16px;
+    font-size: 12px;
+    opacity: 0.7;
+    text-align: center;
+}
+
+.market-pulse-offline-banner {
+    margin: 4px 12px;
+    padding: 5px 10px;
+    font-size: 11px;
+    border-radius: 6px;
+    background-color: rgba(249, 115, 22, 0.12);
+    color: #fb923c;
+}
+
+/* --- Symbol rows --- */
+
+.market-pulse-name-box {
+    spacing: 1px;
+    x-expand: true;
+}
+
+.market-pulse-price-box {
+    spacing: 2px;
+}
+
+.market-pulse-row-price {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.market-pulse-row-loading .market-pulse-row-price {
+    opacity: 0.4;
+}
+
+.market-pulse-row-stale {
+    opacity: 0.6;
+}
+
+.market-pulse-row-error-badge {
+    icon-size: 12px;
+    margin-left: 5px;
+    color: #fb923c;
+}
+
+.market-pulse-sparkline {
+    margin: 0 8px;
+}
+
+/* --- Detail view --- */
+
+.market-pulse-detail-header {
+    spacing: 6px;
+}
+
+.market-pulse-detail-notice {
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background-color: rgba(255, 255, 255, 0.06);
+    opacity: 0.85;
+}
+
+.market-pulse-chart-canvas {
+    margin: 4px 0;
+}
+
+.market-pulse-stats-row {
+    spacing: 10px;
+}
+
+.market-pulse-tf-btn:hover,
+.market-pulse-tf-btn.selected {
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+.market-pulse-compare-btn {
+    margin-left: 8px;
+}
+
+/* --- Search dialog --- */
+
+.market-pulse-search-results-scroll {
+    margin-bottom: 8px;
+}
+
+.market-pulse-search-results-box {
+    spacing: 2px;
+}
+
+.market-pulse-search-result-box {
+    spacing: 8px;
+}
+
+.market-pulse-search-result-name {
+    font-size: 12px;
+}
+
+.market-pulse-loading-label,
+.market-pulse-empty-search-label {
+    padding: 16px 8px;
+    font-size: 12px;
+    opacity: 0.7;
+}
+
+.market-pulse-popular-box,
+.market-pulse-recent-box {
+    spacing: 4px;
+    margin-top: 6px;
+}
+
+.market-pulse-recent-label {
+    font-size: 11px;
+    opacity: 0.6;
+    margin-right: 4px;
+}
+
+.market-pulse-badge-index { background-color: rgba(148, 163, 184, 0.2); color: #cbd5e1; }
+.market-pulse-badge-future { background-color: rgba(236, 72, 153, 0.2); color: #f9a8d4; }
+.market-pulse-badge-mutualfund { background-color: rgba(132, 204, 22, 0.2); color: #bef264; }
+
+/* --- Onboarding --- */
+
+.market-pulse-onboarding-dialog {
+    border-radius: 12px;
+}
+
+.market-pulse-onboarding-body {
+    font-size: 12px;
+    opacity: 0.85;
+    margin-bottom: 10px;
+}
+
+.market-pulse-onboarding-list {
+    spacing: 3px;
+    margin-bottom: 10px;
+}
+
+.market-pulse-onboarding-item {
+    font-size: 12px;
+    opacity: 0.9;
+}
+
+/* --- Desktop widget --- */
+
+.market-pulse-widget-window {
+    padding: 12px;
+    spacing: 8px;
+    border-radius: 12px;
+    background-color: rgba(0, 0, 0, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.market-pulse-widget-header {
+    spacing: 6px;
+}
+
+.market-pulse-widget-title {
+    font-weight: bold;
+    font-size: 13px;
+}
+
+.market-pulse-widget-price {
+    font-size: 18px;
+    font-weight: 600;
+}

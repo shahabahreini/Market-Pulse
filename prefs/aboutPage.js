@@ -4,12 +4,11 @@
  */
 
 import Adw from "gi://Adw";
-import Gtk from "gi://Gtk";
 import GObject from "gi://GObject";
 
 export const AboutPage = GObject.registerClass(
   class AboutPage extends Adw.PreferencesPage {
-    _init(extension) {
+    _init() {
       super._init({
         title: "About",
         icon_name: "help-about-symbolic",

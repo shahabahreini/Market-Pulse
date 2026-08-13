@@ -32,7 +32,10 @@ export class Quote {
         earningsDate = null,
         marketState = 'REGULAR', // 'PRE', 'REGULAR', 'POST', 'CLOSED'
         timestamp = Date.now(),
-        sparkline = []
+        sparkline = [],
+        exchangeName = '',
+        providerUsed = null,
+        error = null
     }) {
         this.symbol = symbol;
         this.price = Number(price) || 0;
@@ -51,6 +54,14 @@ export class Quote {
         this.marketState = marketState;
         this.timestamp = timestamp;
         this.sparkline = Array.isArray(sparkline) ? sparkline : [];
+        this.exchangeName = exchangeName;
+        this.providerUsed = providerUsed;   // which adapter answered (failover hint)
+        this.error = error;                 // last per-symbol failure, for the error badge
+    }
+
+    /** True when this quote came from the offline cache rather than a live poll. */
+    isStale(maxAgeMs = 10 * 60 * 1000) {
+        return Date.now() - this.timestamp > maxAgeMs;
     }
 }
 

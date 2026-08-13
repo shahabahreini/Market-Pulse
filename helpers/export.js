@@ -1,11 +1,13 @@
 /**
- * Market Pulse — Import / Export & Clipboard Helper
+ * Market Pulse — Import / Export Helper
+ *
+ * Pure string building only — NO gi imports. This module is reachable from
+ * extension.js, and pulling Gtk/Gdk into the gnome-shell process is an
+ * automatic extensions.gnome.org rejection. Clipboard access lives in the
+ * process-specific shims: helpers/clipboardShell.js and helpers/clipboardPrefs.js.
+ *
  * GPL-3.0 License
  */
-
-import Gdk from 'gi://Gdk';
-import Gtk from 'gi://Gtk';
-import { Formatter } from './formatter.js';
 
 export class ExportHelper {
     static exportPortfolioToJson(portfolio) {
@@ -34,7 +36,7 @@ export class ExportHelper {
 
             const row = [
                 `"${symObj.symbol}"`,
-                `"${symObj.name.replace(/"/g, '""')}"`,
+                `"${(symObj.name || '').replace(/"/g, '""')}"`,
                 `"${symObj.type}"`,
                 holding.quantity,
                 holding.buyPrice,
@@ -49,17 +51,49 @@ export class ExportHelper {
         return rows.join('\n');
     }
 
-    static copyToClipboard(text) {
-        try {
-            const display = Gdk.Display.get_default();
-            if (display) {
-                const clipboard = display.get_clipboard();
-                clipboard.set(text);
-                return true;
-            }
-        } catch (e) {
-            console.error(`[market-pulse] Clipboard copy error: ${e.message}`);
+    /**
+     * Parses an exported portfolio JSON back into a plain object, rejecting
+     * anything that does not match the expected DTO shape (plan §0.4).
+     */
+    static parsePortfolioJson(text) {
+        const data = JSON.parse(text);
+        if (!data || typeof data !== 'object') {
+            throw new Error('Not a portfolio object');
         }
-        return false;
+        if (!Array.isArray(data.symbols)) {
+            throw new Error('Missing "symbols" array');
+        }
+        const symbols = data.symbols
+            .filter(s => s && typeof s.symbol === 'string' && s.symbol.length > 0)
+            .map(s => ({
+                symbol: s.symbol,
+                name: typeof s.name === 'string' ? s.name : s.symbol,
+                type: typeof s.type === 'string' ? s.type : 'equity',
+                provider: typeof s.provider === 'string' ? s.provider : 'yahoo',
+                currency: typeof s.currency === 'string' ? s.currency : 'USD',
+                exchange: typeof s.exchange === 'string' ? s.exchange : ''
+            }));
+
+        if (symbols.length === 0) {
+            throw new Error('No valid symbols found');
+        }
+
+        const holdings = {};
+        for (const [sym, h] of Object.entries(data.holdings || {})) {
+            if (!h || typeof h !== 'object') continue;
+            holdings[sym] = {
+                symbol: sym,
+                quantity: Number(h.quantity) || 0,
+                buyPrice: Number(h.buyPrice) || 0,
+                notes: typeof h.notes === 'string' ? h.notes : ''
+            };
+        }
+
+        return {
+            id: typeof data.id === 'string' ? data.id : 'default',
+            name: typeof data.name === 'string' ? data.name : 'Imported Portfolio',
+            symbols,
+            holdings
+        };
     }
 }

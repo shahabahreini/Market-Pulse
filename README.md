@@ -14,9 +14,10 @@
 - **Top Bar Panel Ticker**: Glanceable live quote rotation in the GNOME panel with pause-on-hover, pin-to-panel right-click option, middle-click manual refresh, and customizable display formats (Price, Change %, Absolute Change, Price + %).
 - **Live Multi-Provider Symbol Search**: Search equities, ETFs, global indices, and cryptocurrencies (e.g. `AAPL`, `MSFT`, `BTC-USD`, `ETH-USD`, `^GSPC`) directly within GNOME Shell in <3 clicks.
 - **Interactive Cairo Charting**: Intraday, 1-month, 6-month, 1-year, and 5-year trend line canvas with low-saturation color palettes and smooth ease-out transitions.
-- **Multi-Provider Data Resilience**: Automatic fallback across free, keyless providers (**Yahoo Finance**, **Eastmoney**, **Stooq**, **CoinGecko**, **Binance**, and **Frankfurter ECB FX rates**).
+- **Multi-Provider Data Resilience**: Per-symbol automatic failover across free, keyless providers (**Yahoo Finance**, **Eastmoney**, **CoinGecko**, **Binance**), with **Frankfurter ECB rates** for currency conversion. When a provider fails, the row shows which one answered instead — never a silent stale price.
 - **Session-Bound Price Alerts**: Native GNOME desktop notifications for target prices and surge/decline thresholds. Silent notifications without audio disruptors and configurable quiet hours.
-- **Local Portfolio & P&L Tracking**: Calculate total portfolio value, daily change, and overall gains locally. Stored exclusively on device with a instant "hide values" privacy toggle for screen sharing.
+- **Local Portfolio & P&L Tracking**: Calculate total portfolio value, daily change, and overall gains locally. Stored exclusively on device with an instant "hide values" privacy toggle for screen sharing.
+- **Desktop Integration**: Overview search results for tracked symbols, a Quick Settings pause toggle, an optional `Super+M` menu shortcut, and a detachable always-on-top chart widget.
 - **Libadwaita Preferences Window**: HIG-compliant `Adw.PreferencesWindow` with General, Portfolios, Providers multi-select, Alerts, and About settings pages.
 
 ---
@@ -34,14 +35,16 @@
 
 ## Data Providers
 
+All providers are free and require no API key.
+
 | Provider           | Asset Classes                       | Coverage    | Default  |
 | ------------------ | ----------------------------------- | ----------- | -------- |
 | **Yahoo Finance**  | Equities, ETFs, Indices, Crypto, FX | Global      | Enabled  |
 | **Eastmoney**      | A-Shares, SSE, SZSE, Hong Kong      | China       | Enabled  |
-| **Stooq**          | Equities, Indices, Commodities      | Global CSV  | Optional |
 | **CoinGecko Free** | Cryptocurrencies                    | Global      | Optional |
 | **Binance Public** | Crypto pairs                        | Global 24/7 | Optional |
-| **Frankfurter**    | Foreign exchange rates              | ECB FX      | Enabled  |
+
+Currency conversion is handled separately by **Frankfurter** (European Central Bank reference rates). It is not a quote source, so it does not appear in the provider multi-select — pick a display currency on the Providers page instead.
 
 ---
 

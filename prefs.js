@@ -15,10 +15,16 @@ export default class MarketPulsePreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
         const settingsHelper = new SettingsHelper(this);
 
-        window.add(new GeneralPage(this.getSettings()));
+        window.add(new GeneralPage(settingsHelper));
         window.add(new PortfolioPage(settingsHelper));
         window.add(new ProvidersPage(settingsHelper));
         window.add(new AlertsPage(settingsHelper));
         window.add(new AboutPage(this));
+
+        // Flush pending writes and disconnect handlers when the window closes.
+        window.connect('close-request', () => {
+            settingsHelper.destroy();
+            return false;
+        });
     }
 }

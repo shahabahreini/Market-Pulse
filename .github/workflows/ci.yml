@@ -1,0 +1,110 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  lint:
+    name: Lint & schema
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: ESLint (zero warnings)
+        run: npx eslint . --max-warnings 0
+
+      - name: Install GLib tooling
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev-bin
+
+      - name: Compile GSettings schema
+        run: glib-compile-schemas --strict schemas/
+
+      - name: Validate metadata.json
+        run: |
+          node -e "
+            const m = require('./metadata.json');
+            const required = ['uuid', 'name', 'description', 'shell-version', 'version', 'settings-schema'];
+            for (const key of required) {
+              if (!(key in m)) throw new Error('metadata.json missing ' + key);
+            }
+            if (m.uuid !== 'market-pulse@shahabahreini.github.com') throw new Error('uuid mismatch');
+            if (!Number.isInteger(m.version)) throw new Error('version must be an integer for EGO');
+            console.log('metadata.json OK — version ' + m.version + ' (' + m['version-name'] + ')');
+          "
+
+      - name: Parse every module
+        run: make check
+
+      - name: Guard against Gtk/Gdk in the Shell process
+        run: |
+          # Importing Gtk or Gdk into gnome-shell is an automatic EGO rejection.
+          # Only prefs.js, prefs/** and helpers/clipboardPrefs.js may do so.
+          violations=$(grep -rln "gi://Gtk\|gi://Gdk" \
+            extension.js components services helpers 2>/dev/null \
+            | grep -v "helpers/clipboardPrefs.js" || true)
+          if [ -n "$violations" ]; then
+            echo "Gtk/Gdk imported in Shell-process code:"
+            echo "$violations"
+            exit 1
+          fi
+          echo "No Gtk/Gdk leakage into the Shell process."
+
+  package:
+    name: Build EGO zip
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install GLib tooling
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev-bin zip
+
+      - name: Build zip
+        run: make zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: market-pulse-extension
+          path: market-pulse@shahabahreini.github.com.zip
+
+  install-matrix:
+    name: Install on GNOME ${{ matrix.gnome }}
+    runs-on: ubuntu-latest
+    needs: package
+    strategy:
+      fail-fast: false
+      matrix:
+        gnome: ['46', '47', '48', '49', '50']
+    container:
+      image: ghcr.io/gnome-shell-extensions/gnome-shell:${{ matrix.gnome }}
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compile schema
+        run: glib-compile-schemas --strict schemas/
+
+      - name: Verify shell-version declares this release
+        run: |
+          node -e "
+            const m = require('./metadata.json');
+            if (!m['shell-version'].includes('${{ matrix.gnome }}')) {
+              throw new Error('metadata.json does not declare GNOME ${{ matrix.gnome }}');
+            }
+          "
+
+      - name: Install into the extensions directory
+        run: |
+          mkdir -p ~/.local/share/gnome-shell/extensions
+          make install
+          test -f ~/.local/share/gnome-shell/extensions/market-pulse@shahabahreini.github.com/extension.js

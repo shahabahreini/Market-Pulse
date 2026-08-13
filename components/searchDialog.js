@@ -6,6 +6,7 @@
 import St from 'gi://St';
 import GObject from 'gi://GObject';
 import GLib from 'gi://GLib';
+import Gio from 'gi://Gio';
 import Clutter from 'gi://Clutter';
 import * as ModalDialog from 'resource:///org/gnome/shell/ui/modalDialog.js';
 import { SymbolData } from '../helpers/models.js';
@@ -19,6 +20,12 @@ class SymbolSearchDialog extends ModalDialog.ModalDialog {
         this._registry = providerRegistry;
         this._onSymbolAdded = onSymbolAddedCallback;
         this._searchDebounceId = null;
+        this._searchCancellable = null;
+        this._searchSerial = 0;
+
+        // ModalDialog does not destroy itself on close — do it explicitly so
+        // the debounce source and in-flight search never outlive the dialog.
+        this.connect('closed', () => this.destroy());
 
         const content = this.contentLayout;
         content.set_style('width: 440px; padding: 16px;');
@@ -50,7 +57,7 @@ class SymbolSearchDialog extends ModalDialog.ModalDialog {
         });
 
         this._resultsBox = new St.BoxLayout({
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             style_class: 'market-pulse-search-results-box'
         });
         this._resultsScroll.add_child(this._resultsBox);
@@ -58,7 +65,7 @@ class SymbolSearchDialog extends ModalDialog.ModalDialog {
 
         // Quick Popular Choices Row
         this._popularBox = new St.BoxLayout({
-            vertical: false,
+            orientation: Clutter.Orientation.HORIZONTAL,
             style_class: 'market-pulse-popular-box'
         });
         const popular = [
@@ -71,7 +78,8 @@ class SymbolSearchDialog extends ModalDialog.ModalDialog {
         for (const item of popular) {
             const btn = new St.Button({
                 label: item.sym,
-                style_class: 'button market-pulse-popular-chip'
+                style_class: 'button market-pulse-popular-chip',
+                accessible_name: `Add ${item.name}`
             });
             btn.connect('clicked', () => {
                 this._addSymbol(new SymbolData({ symbol: item.sym, name: item.name }));
@@ -79,6 +87,34 @@ class SymbolSearchDialog extends ModalDialog.ModalDialog {
             this._popularBox.add_child(btn);
         }
         content.add_child(this._popularBox);
+
+        // Recent searches (plan §B5) — one click back to a previous lookup.
+        const recent = settingsHelper.getRecentSearches();
+        if (recent.length > 0) {
+            const recentBox = new St.BoxLayout({
+                orientation: Clutter.Orientation.HORIZONTAL,
+                style_class: 'market-pulse-recent-box'
+            });
+            recentBox.add_child(new St.Label({
+                text: 'Recent:',
+                style_class: 'market-pulse-recent-label',
+                y_align: Clutter.ActorAlign.CENTER
+            }));
+
+            for (const query of recent) {
+                const btn = new St.Button({
+                    label: query,
+                    style_class: 'button market-pulse-popular-chip',
+                    accessible_name: `Search again for ${query}`
+                });
+                btn.connect('clicked', () => {
+                    this._entry.set_text(query);
+                    this._entry.grab_key_focus();
+                });
+                recentBox.add_child(btn);
+            }
+            content.add_child(recentBox);
+        }
 
         // Dialog Action Buttons
         this.addButton({
@@ -108,18 +144,26 @@ class SymbolSearchDialog extends ModalDialog.ModalDialog {
     }
 
     async _doSearch(query) {
+        // Stale-response guard: a slower earlier search must not overwrite a
+        // newer one's results.
+        const serial = ++this._searchSerial;
+
+        if (this._searchCancellable) this._searchCancellable.cancel();
+        this._searchCancellable = new Gio.Cancellable();
+        const cancellable = this._searchCancellable;
+
         this._resultsBox.destroy_all_children();
 
-        const loadingLabel = new St.Label({ text: 'Searching market quotes...', style_class: 'market-pulse-loading-label' });
+        const loadingLabel = new St.Label({ text: 'Searching market quotes…', style_class: 'market-pulse-loading-label' });
         this._resultsBox.add_child(loadingLabel);
 
-        const providers = this._registry.getEnabledProviders();
+        const providers = this._registry.getEnabledProviders(this._settingsHelper.getEnabledProviders());
         let results = [];
 
         for (const p of providers) {
             try {
                 if (p.searchSymbols) {
-                    const res = await p.searchSymbols(query);
+                    const res = await p.searchSymbols(query, cancellable);
                     if (res && res.length > 0) {
                         results = results.concat(res);
                     }
@@ -128,6 +172,8 @@ class SymbolSearchDialog extends ModalDialog.ModalDialog {
                 console.warn(`[market-pulse] Search error on ${p.name}: ${e.message}`);
             }
         }
+
+        if (serial !== this._searchSerial || !this._resultsBox) return;
 
         this._resultsBox.destroy_all_children();
 
@@ -142,7 +188,7 @@ class SymbolSearchDialog extends ModalDialog.ModalDialog {
 
         for (const item of results.slice(0, 10)) {
             const rowBtn = new St.Button({ style_class: 'button market-pulse-search-result-row' });
-            const rowBox = new St.BoxLayout({ vertical: false, style_class: 'market-pulse-search-result-box' });
+            const rowBox = new St.BoxLayout({ orientation: Clutter.Orientation.HORIZONTAL, style_class: 'market-pulse-search-result-box' });
 
             const nameLabel = new St.Label({
                 text: `${item.symbol} — ${item.name}`,
@@ -168,6 +214,7 @@ class SymbolSearchDialog extends ModalDialog.ModalDialog {
     }
 
     _addSymbol(symbolObj) {
+        this._settingsHelper.addRecentSearch(symbolObj.symbol);
         this._settingsHelper.addSymbolToActivePortfolio(symbolObj);
         if (this._onSymbolAdded) {
             this._onSymbolAdded(symbolObj);
@@ -180,6 +227,11 @@ class SymbolSearchDialog extends ModalDialog.ModalDialog {
             GLib.Source.remove(this._searchDebounceId);
             this._searchDebounceId = null;
         }
+        if (this._searchCancellable) {
+            this._searchCancellable.cancel();
+            this._searchCancellable = null;
+        }
+        this._resultsBox = null;
         super.destroy();
     }
 });

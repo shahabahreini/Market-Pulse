@@ -8,6 +8,7 @@ import Gtk from 'gi://Gtk';
 import GObject from 'gi://GObject';
 import { AlertRule } from '../helpers/models.js';
 
+
 export const AlertsPage = GObject.registerClass(
 class AlertsPage extends Adw.PreferencesPage {
     _init(settingsHelper) {
@@ -17,6 +18,7 @@ class AlertsPage extends Adw.PreferencesPage {
         });
 
         this._settingsHelper = settingsHelper;
+        this._ruleRows = [];
         this._buildUi();
     }
 
@@ -33,7 +35,7 @@ class AlertsPage extends Adw.PreferencesPage {
             active: this._settingsHelper.get('alerts-enabled')
         });
         alertSwitch.connect('notify::active', () => {
-            this._settingsHelper.set('alerts-enabled', new GObject.Value(alertSwitch.get_active()));
+            this._settingsHelper.setBoolean('alerts-enabled', alertSwitch.get_active());
         });
         group.add(alertSwitch);
 
@@ -43,7 +45,7 @@ class AlertsPage extends Adw.PreferencesPage {
             active: this._settingsHelper.get('quiet-hours-enabled')
         });
         quietSwitch.connect('notify::active', () => {
-            this._settingsHelper.set('quiet-hours-enabled', new GObject.Value(quietSwitch.get_active()));
+            this._settingsHelper.setBoolean('quiet-hours-enabled', quietSwitch.get_active());
         });
         group.add(quietSwitch);
 
@@ -113,9 +115,11 @@ class AlertsPage extends Adw.PreferencesPage {
     }
 
     refreshRulesList() {
-        for (const child of this._rulesGroup.get_children()) {
-            this._rulesGroup.remove(child);
+        // Adw.PreferencesGroup is not a Gtk.Container — track rows to remove them.
+        for (const row of this._ruleRows) {
+            this._rulesGroup.remove(row);
         }
+        this._ruleRows = [];
 
         const rules = this._settingsHelper.getAlertRules();
 
@@ -125,6 +129,7 @@ class AlertsPage extends Adw.PreferencesPage {
                 subtitle: 'Add a target price or percentage change rule above'
             });
             this._rulesGroup.add(emptyRow);
+            this._ruleRows.push(emptyRow);
             return;
         }
 
@@ -152,7 +157,8 @@ class AlertsPage extends Adw.PreferencesPage {
             const delBtn = new Gtk.Button({
                 icon_name: 'user-trash-symbolic',
                 valign: Gtk.Align.CENTER,
-                css_classes: ['destructive-action']
+                tooltip_text: `Delete alert for ${rule.symbol}`,
+                css_classes: ['flat']
             });
             delBtn.connect('clicked', () => {
                 const current = this._settingsHelper.getAlertRules();
@@ -163,6 +169,7 @@ class AlertsPage extends Adw.PreferencesPage {
             row.add_suffix(delBtn);
 
             this._rulesGroup.add(row);
+            this._ruleRows.push(row);
         }
     }
 });

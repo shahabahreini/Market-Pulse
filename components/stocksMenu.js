@@ -4,9 +4,7 @@
  */
 
 import St from 'gi://St';
-import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
-import GLib from 'gi://GLib';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import { Sparkline } from './sparkline.js';
 import { DetailView } from './detailView.js';
@@ -25,8 +23,30 @@ export class StocksMenu {
         this._quotesMap = {};
         this._selectedSymbol = null;
         this._lastUpdatedTime = null;
+        this._isOffline = false;
+        this._signals = [];
+        this._dialog = null;
 
         this._buildMenu();
+
+        // Render on open so the menu is never blank before the first poll,
+        // and drop the row actors again on close (plan §A5).
+        this._connect(this._menu, 'open-state-changed', (menu, isOpen) => {
+            if (isOpen) {
+                this.renderSymbolList();
+            } else {
+                this._selectedSymbol = null;
+                this._detailSection.actor.hide();
+                this._symbolBox.destroy_all_children();
+            }
+        });
+    }
+
+    /** Tracks every handler so disable() can disconnect all of them. */
+    _connect(source, signal, callback) {
+        const id = source.connect(signal, callback);
+        this._signals.push([source, id]);
+        return id;
     }
 
     _buildMenu() {
@@ -35,7 +55,7 @@ export class StocksMenu {
         // 1. Header Section
         const headerSection = new PopupMenu.PopupMenuSection();
         const headerBox = new St.BoxLayout({
-            vertical: false,
+            orientation: Clutter.Orientation.HORIZONTAL,
             style_class: 'market-pulse-menu-header'
         });
 
@@ -51,43 +71,52 @@ export class StocksMenu {
         const refreshBtn = new St.Button({
             child: new St.Icon({ icon_name: 'view-refresh-symbolic', style_class: 'popup-menu-icon' }),
             style_class: 'button market-pulse-icon-btn',
-            tooltip_text: 'Refresh quotes'
+            accessible_name: 'Refresh quotes'
         });
-        refreshBtn.connect('clicked', () => this._scheduler.triggerRefresh());
+        this._connect(refreshBtn, 'clicked', () => this._scheduler.triggerRefresh());
         headerBox.add_child(refreshBtn);
 
         const maskBtn = new St.Button({
             child: new St.Icon({ icon_name: 'security-high-symbolic', style_class: 'popup-menu-icon' }),
             style_class: 'button market-pulse-icon-btn',
-            tooltip_text: 'Toggle privacy masking'
+            accessible_name: 'Toggle privacy masking'
         });
-        maskBtn.connect('clicked', () => {
-            const cur = this._settings.get('hide-private-values');
-            this._settings.set('hide-private-values', new GLib.Variant('b', !cur));
+        this._connect(maskBtn, 'clicked', () => {
+            this._settings.setBoolean('hide-private-values', !this._settings.get('hide-private-values'));
+            this.renderSymbolList();
         });
         headerBox.add_child(maskBtn);
 
         const addBtn = new St.Button({
             child: new St.Icon({ icon_name: 'list-add-symbolic', style_class: 'popup-menu-icon' }),
             style_class: 'button market-pulse-icon-btn',
-            tooltip_text: 'Add symbol'
+            accessible_name: 'Add symbol'
         });
-        addBtn.connect('clicked', () => {
+        this._connect(addBtn, 'clicked', () => {
             this._menu.close();
-            const dialog = new SymbolSearchDialog(this._settings, this._registry, () => {
+            this._dialog = new SymbolSearchDialog(this._settings, this._registry, () => {
+                this._dialog = null;
                 this._scheduler.triggerRefresh();
             });
-            dialog.open();
+            this._dialog.open();
         });
         headerBox.add_child(addBtn);
 
         headerSection.actor.add_child(headerBox);
+
+        this._offlineLabel = new St.Label({
+            text: '',
+            style_class: 'market-pulse-offline-banner'
+        });
+        this._offlineLabel.hide();
+        headerSection.actor.add_child(this._offlineLabel);
+
         this._menu.addMenuItem(headerSection);
 
         // 2. Portfolio P&L Summary Banner
         this._summarySection = new PopupMenu.PopupMenuSection();
         this._summaryBox = new St.BoxLayout({
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             style_class: 'market-pulse-summary-banner'
         });
         this._summaryValLabel = new St.Label({ text: '', style_class: 'market-pulse-summary-val' });
@@ -107,14 +136,18 @@ export class StocksMenu {
             vscrollbar_policy: St.PolicyType.AUTOMATIC,
             height: 280
         });
-        this._symbolBox = new St.BoxLayout({ vertical: true, style_class: 'market-pulse-symbol-list' });
+        this._symbolBox = new St.BoxLayout({ orientation: Clutter.Orientation.VERTICAL, style_class: 'market-pulse-symbol-list' });
         this._symbolScroll.add_child(this._symbolBox);
         this._symbolListSection.actor.add_child(this._symbolScroll);
         this._menu.addMenuItem(this._symbolListSection);
 
         // 4. Detail View Card (Collapsible)
         this._detailSection = new PopupMenu.PopupMenuSection();
-        this._detailView = new DetailView(this._registry);
+        this._detailView = new DetailView(this._registry, this._settings);
+        this._detailView.setPopOutHandler(symObj => {
+            this._menu.close();
+            this._extension.toggleWidget(symObj);
+        });
         this._detailSection.actor.add_child(this._detailView);
         this._detailSection.actor.hide(); // Hidden until row selected
         this._menu.addMenuItem(this._detailSection);
@@ -124,7 +157,7 @@ export class StocksMenu {
         // 5. Freshness Footer & Bottom Settings Action Item
         const footerSection = new PopupMenu.PopupMenuSection();
         const footerBox = new St.BoxLayout({
-            vertical: false,
+            orientation: Clutter.Orientation.HORIZONTAL,
             style_class: 'market-pulse-menu-footer'
         });
 
@@ -138,9 +171,11 @@ export class StocksMenu {
 
         const settingsBtn = new St.Button({
             label: '⚙️ Settings',
-            style_class: 'button market-pulse-settings-link-btn'
+            style_class: 'button market-pulse-settings-link-btn',
+            accessible_name: 'Open Market Pulse settings'
         });
-        settingsBtn.connect('clicked', () => {
+        this._connect(settingsBtn, 'clicked', () => {
+            this._menu.close();
             this._extension.openPreferences();
         });
         footerBox.add_child(settingsBtn);
@@ -149,14 +184,35 @@ export class StocksMenu {
         this._menu.addMenuItem(footerSection);
     }
 
-    updateQuotes(quotesMap) {
+    updateQuotes(quotesMap, state = null) {
         this._quotesMap = quotesMap;
-        this._lastUpdatedTime = Date.now();
-        this._freshnessLabel.set_text(`Updated: ${Formatter.formatTime(this._lastUpdatedTime)}`);
-        this.renderSymbolList();
+        this._isOffline = !!state?.offline;
+        if (!this._isOffline) this._lastUpdatedTime = Date.now();
+
+        if (this._freshnessLabel) {
+            this._freshnessLabel.set_text(this._lastUpdatedTime
+                ? `Updated: ${Formatter.formatTime(this._lastUpdatedTime)}`
+                : 'Updated: --:--');
+        }
+        this._renderOfflineBanner();
+
+        // Rows only exist while the menu is open.
+        if (this._menu?.isOpen) this.renderSymbolList();
+    }
+
+    /** Offline banner over cached data (plan §A3/§C9). */
+    _renderOfflineBanner() {
+        if (!this._offlineLabel) return;
+        if (this._isOffline) {
+            this._offlineLabel.set_text('⚠ Offline — showing last known quotes');
+            this._offlineLabel.show();
+        } else {
+            this._offlineLabel.hide();
+        }
     }
 
     renderSymbolList() {
+        if (!this._symbolBox) return;
         this._symbolBox.destroy_all_children();
 
         const portfolio = this._settings.getActivePortfolio();
@@ -165,11 +221,12 @@ export class StocksMenu {
         const isColorblind = this._settings.get('colorblind-mode');
 
         // Update Summary Banner
+        const baseCurrency = this._settings.get('display-currency') || 'USD';
         const pSummary = PortfolioCalculator.calculatePortfolioSummary(portfolio, this._quotesMap, isMasked);
         if (pSummary.hasHoldings) {
             this._summarySection.actor.show();
-            this._summaryValLabel.set_text(`Total Portfolio: ${PortfolioCalculator.formatValueOrMask(pSummary.totalValue, 'USD', isMasked)}`);
-            this._summaryGainLabel.set_text(`P&L: ${PortfolioCalculator.formatValueOrMask(pSummary.totalGain, 'USD', isMasked)} (${Formatter.formatPercent(pSummary.totalGainPct)})`);
+            this._summaryValLabel.set_text(`Total Portfolio: ${PortfolioCalculator.formatValueOrMask(pSummary.totalValue, baseCurrency, isMasked)}`);
+            this._summaryGainLabel.set_text(`P&L: ${PortfolioCalculator.formatValueOrMask(pSummary.totalGain, baseCurrency, isMasked)} (${Formatter.formatPercent(pSummary.totalGainPct)})`);
         } else {
             this._summarySection.actor.hide();
         }
@@ -186,14 +243,31 @@ export class StocksMenu {
         for (const symObj of symbols) {
             const quote = this._quotesMap[symObj.symbol];
             const rowBtn = new St.Button({ style_class: 'button market-pulse-symbol-row' });
-            const rowBox = new St.BoxLayout({ vertical: false, style_class: 'market-pulse-row-box' });
+            const rowBox = new St.BoxLayout({ orientation: Clutter.Orientation.HORIZONTAL, style_class: 'market-pulse-row-box' });
+
+            const hasError = !!quote?.error;
+            const isStale = !hasError && !!quote?.isStale?.();
+            if (hasError || isStale) rowBtn.add_style_class_name('market-pulse-row-stale');
 
             // Symbol Name & Type
-            const nameBox = new St.BoxLayout({ vertical: true, style_class: 'market-pulse-name-box' });
-            const symLabel = new St.Label({ text: symObj.symbol, style_class: 'market-pulse-row-sym' });
-            const descLabel = new St.Label({ text: symObj.name, style_class: 'market-pulse-row-desc' });
-            nameBox.add_child(symLabel);
-            nameBox.add_child(descLabel);
+            const nameBox = new St.BoxLayout({ orientation: Clutter.Orientation.VERTICAL, style_class: 'market-pulse-name-box' });
+
+            const symRow = new St.BoxLayout({ orientation: Clutter.Orientation.HORIZONTAL });
+            symRow.add_child(new St.Label({ text: symObj.symbol, style_class: 'market-pulse-row-sym' }));
+            if (hasError) {
+                // Per-symbol error badge (plan §A3) — never fail silently.
+                symRow.add_child(new St.Icon({
+                    icon_name: 'dialog-warning-symbolic',
+                    style_class: 'market-pulse-row-error-badge',
+                    accessible_name: `Error updating ${symObj.symbol}: ${quote.error}`
+                }));
+            }
+            nameBox.add_child(symRow);
+
+            const descText = hasError
+                ? `Last update ${Formatter.formatTime(quote.timestamp)}`
+                : (isStale ? `Cached ${Formatter.formatTime(quote.timestamp)}` : symObj.name);
+            nameBox.add_child(new St.Label({ text: descText, style_class: 'market-pulse-row-desc' }));
             rowBox.add_child(nameBox);
 
             // Mini Sparkline (Cairo)
@@ -204,8 +278,10 @@ export class StocksMenu {
             rowBox.add_child(sparkline);
 
             // Price & Percent Chip
-            const priceBox = new St.BoxLayout({ vertical: true, style_class: 'market-pulse-price-box' });
-            const priceVal = quote ? Formatter.formatCurrency(quote.price, quote.currency) : '...';
+            const priceBox = new St.BoxLayout({ orientation: Clutter.Orientation.VERTICAL, style_class: 'market-pulse-price-box' });
+            // Loading state until the first quote for this symbol arrives.
+            if (!quote) rowBtn.add_style_class_name('market-pulse-row-loading');
+            const priceVal = quote ? Formatter.formatCurrency(quote.price, quote.currency) : '···';
             const priceLabel = new St.Label({
                 text: isMasked ? '••••••' : priceVal,
                 style_class: 'market-pulse-row-price'
@@ -247,6 +323,32 @@ export class StocksMenu {
     }
 
     destroy() {
+        for (const [source, id] of this._signals) {
+            try {
+                source.disconnect(id);
+            } catch (e) {
+                // Source already finalized — nothing to disconnect.
+            }
+        }
+        this._signals = [];
+
+        if (this._dialog) {
+            this._dialog.destroy();
+            this._dialog = null;
+        }
+        if (this._detailView) {
+            this._detailView.destroy();
+            this._detailView = null;
+        }
+        if (this._menu) {
+            this._menu.removeAll();
+        }
+
+        this._symbolBox = null;
+        this._symbolScroll = null;
+        this._summarySection = null;
+        this._detailSection = null;
+        this._freshnessLabel = null;
         this._quotesMap = {};
         this._selectedSymbol = null;
     }

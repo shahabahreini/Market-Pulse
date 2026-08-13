@@ -1,113 +1,148 @@
 /**
  * Market Pulse — Yahoo Finance Provider Adapter
+ *
+ * Built on the keyless endpoints only. v7/finance/quote is deliberately NOT
+ * used: it is gated behind a cookie+crumb handshake and answers 429 without
+ * one, which is exactly the silent-failure mode the project plan calls out as
+ * an anti-pattern. v8/finance/chart carries everything the UI needs (price,
+ * previous close, currency, market state, day range) plus the close series
+ * used for sparklines, in a single request per symbol.
+ *
  * GPL-3.0 License
  */
 
 import { BaseQuoteProvider } from '../quoteProvider.js';
 import { Quote } from '../../helpers/models.js';
 
+const HOSTS = ['https://query1.finance.yahoo.com', 'https://query2.finance.yahoo.com'];
+
 export class YahooProvider extends BaseQuoteProvider {
     constructor() {
-        super('yahoo', 'Yahoo Finance', ['equity', 'etf', 'index', 'crypto', 'forex']);
+        super('yahoo', 'Yahoo Finance', ['equity', 'etf', 'index', 'crypto', 'forex', 'future', 'mutualfund']);
+        this._hostIndex = 0;
+    }
+
+    /** Rotates hosts so a throttled endpoint does not sink every later request. */
+    async _getJsonWithFailover(path, cancellable) {
+        let lastError = null;
+        for (let attempt = 0; attempt < HOSTS.length; attempt++) {
+            const host = HOSTS[(this._hostIndex + attempt) % HOSTS.length];
+            try {
+                const json = await this._httpGetJson(`${host}${path}`, {}, cancellable);
+                if (json) {
+                    this._hostIndex = (this._hostIndex + attempt) % HOSTS.length;
+                    return json;
+                }
+            } catch (e) {
+                lastError = e;
+            }
+        }
+        if (lastError) throw lastError;
+        return null;
     }
 
     async fetchQuotes(symbols, cancellable = null) {
         if (!symbols || symbols.length === 0) return {};
-        const symList = symbols.join(',');
-        const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symList)}`;
-
-        const headers = {
-            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
-            'Accept': 'application/json, text/plain, */*'
-        };
-
-        const json = await this._httpGetJson(url, headers, cancellable);
-        if (!json || !json.quoteResponse || !json.quoteResponse.result) {
-            return {};
-        }
 
         const quotesMap = {};
-        for (const item of json.quoteResponse.result) {
-            const marketState = item.marketState || 'REGULAR';
-            let price = item.regularMarketPrice ?? 0;
-            let change = item.regularMarketChange ?? 0;
-            let changePct = item.regularMarketChangePercent ?? 0;
+        let rateLimitError = null;
 
-            if (marketState === 'PRE' && item.preMarketPrice) {
-                price = item.preMarketPrice;
-                change = item.preMarketChange ?? change;
-                changePct = item.preMarketChangePercent ?? changePct;
-            } else if (marketState === 'POST' && item.postMarketPrice) {
-                price = item.postMarketPrice;
-                change = item.postMarketChange ?? change;
-                changePct = item.postMarketChangePercent ?? changePct;
+        for (const symbol of symbols) {
+            try {
+                const quote = await this._fetchOneQuote(symbol, cancellable);
+                if (quote) quotesMap[symbol] = quote;
+            } catch (e) {
+                if (e.statusCode === 429 || e.statusCode === 503) {
+                    // Stop hammering — let the scheduler back off.
+                    rateLimitError = e;
+                    break;
+                }
+                console.warn(`[market-pulse] Yahoo error for ${symbol}: ${e.message}`);
             }
+        }
 
-            quotesMap[item.symbol] = new Quote({
-                symbol: item.symbol,
-                price: price,
-                change: change,
-                changePercent: changePct,
-                currency: item.currency || 'USD',
-                high: item.regularMarketDayHigh ?? null,
-                low: item.regularMarketDayLow ?? null,
-                open: item.regularMarketOpen ?? null,
-                previousClose: item.regularMarketPreviousClose ?? null,
-                volume: item.regularMarketVolume ?? null,
-                marketCap: item.marketCap ?? null,
-                peRatio: item.trailingPE ?? null,
-                dividendYield: item.trailingAnnualDividendYield ? item.trailingAnnualDividendYield * 100 : null,
-                earningsDate: item.earningsTimestamp ? new Date(item.earningsTimestamp * 1000).toISOString() : null,
-                marketState: marketState,
-                timestamp: Date.now(),
-                sparkline: item.sparkline || []
-            });
+        if (rateLimitError && Object.keys(quotesMap).length === 0) {
+            throw rateLimitError;
         }
         return quotesMap;
     }
 
+    async _fetchOneQuote(symbol, cancellable) {
+        const path = `/v8/finance/chart/${encodeURIComponent(symbol)}?range=1d&interval=5m`;
+        const json = await this._getJsonWithFailover(path, cancellable);
+
+        const result = json?.chart?.result?.[0];
+        if (!result || !result.meta) return null;
+
+        const meta = result.meta;
+        const price = meta.regularMarketPrice ?? null;
+        if (price === null) return null;
+
+        const previousClose = meta.chartPreviousClose ?? meta.previousClose ?? null;
+        const change = previousClose !== null ? price - previousClose : 0;
+        const changePercent = previousClose ? (change / previousClose) * 100 : 0;
+
+        // Close series doubles as the sparkline; nulls mark gaps in trading.
+        const closes = (result.indicators?.quote?.[0]?.close ?? []).filter(v => v !== null && v !== undefined);
+
+        return new Quote({
+            symbol,
+            price,
+            change,
+            changePercent,
+            currency: meta.currency || 'USD',
+            high: meta.regularMarketDayHigh ?? null,
+            low: meta.regularMarketDayLow ?? null,
+            open: closes.length > 0 ? closes[0] : null,
+            previousClose,
+            volume: meta.regularMarketVolume ?? null,
+            marketState: meta.marketState || 'REGULAR',
+            exchangeName: meta.fullExchangeName || meta.exchangeName || '',
+            timestamp: Date.now(),
+            providerUsed: this.id,
+            sparkline: closes.slice(-40)
+        });
+    }
+
     async searchSymbols(query, cancellable = null) {
         if (!query || query.trim().length === 0) return [];
-        const url = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=10&newsCount=0`;
-        const headers = {
-            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
-        };
+        const path = `/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=10&newsCount=0`;
 
-        const json = await this._httpGetJson(url, headers, cancellable);
-        if (!json || !json.quotes) return [];
+        const json = await this._getJsonWithFailover(path, cancellable);
+        if (!json || !Array.isArray(json.quotes)) return [];
 
-        return json.quotes.map(q => ({
-            symbol: q.symbol,
-            name: q.shortname || q.longname || q.symbol,
-            type: (q.quoteType || 'equity').toLowerCase(),
-            exchange: q.exchange || q.exchDisp || '',
-            provider: 'yahoo'
-        }));
+        return json.quotes
+            .filter(q => q.symbol)
+            .map(q => ({
+                symbol: q.symbol,
+                name: q.shortname || q.longname || q.symbol,
+                type: this._normalizeType(q.quoteType),
+                exchange: q.exchDisp || q.exchange || '',
+                provider: 'yahoo'
+            }));
+    }
+
+    _normalizeType(quoteType) {
+        const t = (quoteType || 'equity').toLowerCase();
+        if (t === 'cryptocurrency') return 'crypto';
+        if (t === 'currency') return 'forex';
+        return t;
     }
 
     async fetchChartData(symbol, range = '1d', interval = '5m', cancellable = null) {
-        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=${range}&interval=${interval}`;
-        const headers = {
-            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
-        };
+        const path = `/v8/finance/chart/${encodeURIComponent(symbol)}?range=${encodeURIComponent(range)}&interval=${encodeURIComponent(interval)}`;
+        const json = await this._getJsonWithFailover(path, cancellable);
 
-        const json = await this._httpGetJson(url, headers, cancellable);
+        const res = json?.chart?.result?.[0];
+        if (!res) return [];
 
-        if (!json || !json.chart || !json.chart.result || json.chart.result.length === 0) {
-            return [];
-        }
-
-        const res = json.chart.result[0];
         const timestamps = res.timestamp || [];
-        const quotes = res.indicators?.quote?.[0]?.close || [];
+        const closes = res.indicators?.quote?.[0]?.close || [];
 
         const points = [];
         for (let i = 0; i < timestamps.length; i++) {
-            if (quotes[i] !== null && quotes[i] !== undefined) {
-                points.push({
-                    time: timestamps[i] * 1000,
-                    price: quotes[i]
-                });
+            if (closes[i] !== null && closes[i] !== undefined) {
+                points.push({ time: timestamps[i] * 1000, price: closes[i] });
             }
         }
         return points;

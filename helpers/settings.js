@@ -3,7 +3,6 @@
  * GPL-3.0 License
  */
 
-import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import { Portfolio, SymbolData, AlertRule } from './models.js';
 
@@ -22,6 +21,16 @@ export class SettingsHelper {
     // --- Portfolio Management ---
 
     getPortfolios() {
+        // A debounced write may not have reached GSettings yet — prefer it so
+        // rapid edits never read back a stale portfolio.
+        if (this._pendingPortfolios) {
+            const portfolios = {};
+            for (const [id, p] of Object.entries(this._pendingPortfolios)) {
+                portfolios[id] = new Portfolio(p);
+            }
+            return portfolios;
+        }
+
         try {
             const raw = this._settings.get_string('portfolios');
             const data = JSON.parse(raw);
@@ -47,21 +56,28 @@ export class SettingsHelper {
     }
 
     savePortfolios(portfolios) {
+        this._pendingPortfolios = portfolios;
+
         if (this._saveDebounceId) {
             GLib.Source.remove(this._saveDebounceId);
             this._saveDebounceId = null;
         }
 
         this._saveDebounceId = GLib.timeout_add(GLib.PRIORITY_LOW, 300, () => {
-            try {
-                const jsonStr = JSON.stringify(portfolios);
-                this._settings.set_string('portfolios', jsonStr);
-            } catch (e) {
-                console.error(`[market-pulse] Error saving portfolios: ${e.message}`);
-            }
             this._saveDebounceId = null;
+            this._flushPortfolios();
             return GLib.SOURCE_REMOVE;
         });
+    }
+
+    _flushPortfolios() {
+        if (!this._pendingPortfolios) return;
+        try {
+            this._settings.set_string('portfolios', JSON.stringify(this._pendingPortfolios));
+        } catch (e) {
+            console.error(`[market-pulse] Error saving portfolios: ${e.message}`);
+        }
+        this._pendingPortfolios = null;
     }
 
     getActivePortfolio() {
@@ -92,6 +108,43 @@ export class SettingsHelper {
             delete portfolios[activeId].holdings[symbolStr];
             this.savePortfolios(portfolios);
         }
+    }
+
+    // --- Per-Symbol Ticker Display Overrides (plan §B4) ---
+
+    getSymbolDisplayOverrides() {
+        try {
+            return JSON.parse(this._settings.get_string('symbol-display-overrides') || '{}');
+        } catch (e) {
+            return {};
+        }
+    }
+
+    /** Returns the per-symbol format if set, otherwise the global ticker mode. */
+    getDisplayModeForSymbol(symbol) {
+        const overrides = this.getSymbolDisplayOverrides();
+        return overrides[symbol] || this.get('ticker-mode') || 'price-and-pct';
+    }
+
+    setSymbolDisplayOverride(symbol, mode) {
+        const overrides = this.getSymbolDisplayOverrides();
+        if (!mode) delete overrides[symbol];
+        else overrides[symbol] = mode;
+        this._settings.set_string('symbol-display-overrides', JSON.stringify(overrides));
+    }
+
+    // --- Recent Searches (plan §B5) ---
+
+    getRecentSearches() {
+        return this._settings.get_strv('recent-searches');
+    }
+
+    addRecentSearch(query) {
+        const trimmed = (query || '').trim();
+        if (!trimmed) return;
+        const recent = this.getRecentSearches().filter(q => q.toLowerCase() !== trimmed.toLowerCase());
+        recent.unshift(trimmed);
+        this._settings.set_strv('recent-searches', recent.slice(0, 5));
     }
 
     // --- Provider Settings ---
@@ -127,11 +180,38 @@ export class SettingsHelper {
 
     // --- General Properties ---
 
+    /**
+     * Reads any key as a plain JS value.
+     * Note: GLib.Variant exposes recursiveUnpack() (camelCase) in GJS —
+     * there is no snake_case alias.
+     */
     get(key) {
-        return this._settings.get_value(key).recursive_unpack();
+        try {
+            return this._settings.get_value(key).recursiveUnpack();
+        } catch (e) {
+            console.error(`[market-pulse] Error reading setting '${key}': ${e.message}`);
+            return null;
+        }
     }
 
-    set(key, gvariant) {
+    setBoolean(key, value) {
+        this._settings.set_boolean(key, !!value);
+    }
+
+    setString(key, value) {
+        this._settings.set_string(key, value ?? '');
+    }
+
+    setInt(key, value) {
+        this._settings.set_int(key, Math.round(Number(value) || 0));
+    }
+
+    setEnum(key, nick) {
+        this._settings.set_string(key, nick);
+    }
+
+    /** Escape hatch for callers that already hold a GLib.Variant. */
+    setValue(key, gvariant) {
         this._settings.set_value(key, gvariant);
     }
 
@@ -146,6 +226,8 @@ export class SettingsHelper {
             GLib.Source.remove(this._saveDebounceId);
             this._saveDebounceId = null;
         }
+        // Never drop an in-flight edit on the floor.
+        this._flushPortfolios();
         for (const id of this._signalIds) {
             this._settings.disconnect(id);
         }

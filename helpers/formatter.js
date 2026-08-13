@@ -3,17 +3,43 @@
  * GPL-3.0 License
  */
 
+let _fxService = null;
+let _getDisplayCurrency = null;
+
 export class Formatter {
+    /**
+     * Wires optional currency conversion (plan §C4). Called from enable() with
+     * the FxService and a getter for the display-currency preference, and with
+     * (null, null) on disable so nothing survives the extension.
+     */
+    static setFxService(fxService, displayCurrencyGetter) {
+        _fxService = fxService;
+        _getDisplayCurrency = displayCurrencyGetter;
+    }
+
+    /**
+     * Converts into the user's display currency when a rate is already cached.
+     * Rendering never awaits — an uncached rate simply shows the native amount.
+     */
+    static _convert(val, currency) {
+        if (!_fxService || !_getDisplayCurrency) return [val, currency];
+        const target = _getDisplayCurrency();
+        if (!target || target === currency) return [val, currency];
+        const rate = _fxService.getCachedRate(currency, target);
+        return rate === null ? [val, currency] : [val * rate, target];
+    }
+
     static formatCurrency(val, currency = 'USD', locale = undefined) {
         if (val === null || val === undefined || isNaN(val)) return '—';
+        const [amount, code] = Formatter._convert(val, currency);
         try {
             return new Intl.NumberFormat(locale, {
                 style: 'currency',
-                currency: currency,
-                maximumFractionDigits: val >= 100 ? 2 : val >= 1 ? 2 : 4
-            }).format(val);
+                currency: code,
+                maximumFractionDigits: Math.abs(amount) >= 1 ? 2 : 4
+            }).format(amount);
         } catch (e) {
-            return `${currency} ${val.toFixed(2)}`;
+            return `${code} ${amount.toFixed(2)}`;
         }
     }
 

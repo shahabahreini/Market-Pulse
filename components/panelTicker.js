@@ -110,11 +110,7 @@ class PanelTicker extends PanelMenu.Button {
         const currentSym = portfolio.symbols[this._currentIndex]?.symbol || '';
         const pinned = this._settingsHelper.get('pinned-symbol');
 
-        if (pinned === currentSym) {
-            this._settingsHelper.set('pinned-symbol', new GLib.Variant('s', ''));
-        } else {
-            this._settingsHelper.set('pinned-symbol', new GLib.Variant('s', currentSym));
-        }
+        this._settingsHelper.setString('pinned-symbol', pinned === currentSym ? '' : currentSym);
         this.refreshDisplay();
     }
 
@@ -138,7 +134,8 @@ class PanelTicker extends PanelMenu.Button {
 
         if (!targetSymObj) return;
         const quote = this._quotesMap[targetSymObj.symbol];
-        const displayMode = this._settingsHelper.get('ticker-mode') || 'price-and-pct';
+        // Per-symbol override wins over the global format (plan §B4).
+        const displayMode = this._settingsHelper.getDisplayModeForSymbol(targetSymObj.symbol);
         const isMasked = this._settingsHelper.get('hide-private-values');
 
         let text = `${targetSymObj.name || targetSymObj.symbol}: `;

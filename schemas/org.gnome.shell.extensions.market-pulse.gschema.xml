@@ -141,5 +141,53 @@
       <description>Add a pause/resume polling toggle to GNOME Shell Quick Settings menu.</description>
     </key>
 
+    <key name="menu-shortcut" type="as">
+      <default><![CDATA[['<Super>m']]]></default>
+      <summary>Menu Keyboard Shortcut</summary>
+      <description>Keyboard shortcut that opens the Market Pulse panel menu.</description>
+    </key>
+
+    <key name="menu-shortcut-enabled" type="b">
+      <default>false</default>
+      <summary>Menu Shortcut Enabled</summary>
+      <description>Whether the configurable keyboard shortcut for opening the menu is active.</description>
+    </key>
+
+    <key name="search-provider-enabled" type="b">
+      <default>true</default>
+      <summary>Shell Search Provider</summary>
+      <description>Show tracked symbol quotes as results in the GNOME Shell overview search.</description>
+    </key>
+
+    <key name="first-run-complete" type="b">
+      <default>false</default>
+      <summary>First Run Completed</summary>
+      <description>Set once the onboarding dialog offering a demo portfolio has been shown.</description>
+    </key>
+
+    <key name="comparison-symbols" type="as">
+      <default>[]</default>
+      <summary>Chart Comparison Symbols</summary>
+      <description>Additional symbols overlaid on the detail chart as normalized percentage series.</description>
+    </key>
+
+    <key name="symbol-display-overrides" type="s">
+      <default>'{}'</default>
+      <summary>Per-Symbol Display Overrides</summary>
+      <description>JSON map of symbol to ticker display format, overriding the global ticker mode.</description>
+    </key>
+
+    <key name="recent-searches" type="as">
+      <default>[]</default>
+      <summary>Recent Symbol Searches</summary>
+      <description>Most recent symbol search queries, offered as shortcuts in the add-symbol dialog.</description>
+    </key>
+
+    <key name="schema-version" type="i">
+      <default>1</default>
+      <summary>Settings Schema Version</summary>
+      <description>Internal version marker used by the settings migration framework.</description>
+    </key>
+
   </schema>
 </schemalist>

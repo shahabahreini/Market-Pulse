@@ -11,6 +11,7 @@
   ],
   "url": "https://github.com/shahabahreini/market-pulse-gnome-extension",
   "version": 1,
+  "version-name": "1.0.0",
   "settings-schema": "org.gnome.shell.extensions.market-pulse",
   "gettext-domain": "market-pulse"
 }

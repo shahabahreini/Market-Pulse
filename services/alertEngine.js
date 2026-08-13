@@ -3,7 +3,7 @@
  * GPL-3.0 License
  */
 
-import Main from 'resource:///org/gnome/shell/ui/main.js';
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as MessageTray from 'resource:///org/gnome/shell/ui/messageTray.js';
 import { Formatter } from '../helpers/formatter.js';
 

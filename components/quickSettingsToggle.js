@@ -7,8 +7,8 @@ import GObject from 'gi://GObject';
 import * as QuickSettings from 'resource:///org/gnome/shell/ui/quickSettings.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-export const QuickSettingsToggle = GObject.registerClass(
-class QuickSettingsToggle extends QuickSettings.Toggle {
+const MarketPulseToggle = GObject.registerClass(
+class MarketPulseToggle extends QuickSettings.QuickToggle {
     _init(pollingScheduler) {
         super._init({
             title: 'Market Pulse',
@@ -20,8 +20,8 @@ class QuickSettingsToggle extends QuickSettings.Toggle {
         this._scheduler = pollingScheduler;
         this.checked = true;
 
-        this.connect('clicked', () => {
-            this.checked = !this.checked;
+        // toggleMode already flips `checked` — only react to the result.
+        this._notifyId = this.connect('notify::checked', () => {
             if (this.checked) {
                 this.subtitle = 'Live Polling';
                 this._scheduler.resume();
@@ -31,20 +31,38 @@ class QuickSettingsToggle extends QuickSettings.Toggle {
             }
         });
     }
+
+    destroy() {
+        if (this._notifyId) {
+            this.disconnect(this._notifyId);
+            this._notifyId = null;
+        }
+        this._scheduler = null;
+        super.destroy();
+    }
 });
 
-export class QuickSettingsIndicator extends QuickSettings.SystemIndicator {
-    _init(pollingScheduler) {
-        super._init();
-
-        this._toggle = new QuickSettingsToggle(pollingScheduler);
-        this.quickSettingsItems.push(this._toggle);
-
-        Main.panel.statusArea.quickSettings.addExternalIndicator(this);
+/**
+ * Composes a SystemIndicator rather than subclassing it — subclassing a
+ * GObject type from plain JS (no registerClass) throws on instantiation.
+ */
+export class QuickSettingsIndicator {
+    constructor(pollingScheduler) {
+        this._indicator = new QuickSettings.SystemIndicator();
+        this._toggle = new MarketPulseToggle(pollingScheduler);
+        this._indicator.quickSettingsItems.push(this._toggle);
+        Main.panel.statusArea.quickSettings.addExternalIndicator(this._indicator);
     }
 
     destroy() {
-        this.quickSettingsItems.forEach(item => item.destroy());
-        super.destroy();
+        if (this._indicator) {
+            for (const item of this._indicator.quickSettingsItems) {
+                item.destroy();
+            }
+            this._indicator.quickSettingsItems = [];
+            this._indicator.destroy();
+            this._indicator = null;
+        }
+        this._toggle = null;
     }
 }

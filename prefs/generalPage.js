@@ -9,13 +9,14 @@ import GObject from 'gi://GObject';
 
 export const GeneralPage = GObject.registerClass(
 class GeneralPage extends Adw.PreferencesPage {
-    _init(settings) {
+    _init(settingsHelper) {
         super._init({
             title: 'General',
             icon_name: 'preferences-system-symbolic'
         });
 
-        this._settings = settings;
+        this._settingsHelper = settingsHelper;
+        this._settings = settingsHelper.getSettings();
 
         // --- Group 1: Top Panel Ticker & Placement ---
         const panelGroup = new Adw.PreferencesGroup({ title: 'Top Panel Ticker & Placement' });
@@ -145,5 +146,39 @@ class GeneralPage extends Adw.PreferencesPage {
         pollGroup.add(battRow);
 
         this.add(pollGroup);
+
+        // --- Group 3: Desktop Integration ---
+        const integrationGroup = new Adw.PreferencesGroup({
+            title: 'Desktop Integration',
+            description: 'How Market Pulse appears elsewhere in GNOME Shell'
+        });
+
+        const searchRow = new Adw.SwitchRow({
+            title: 'Overview Search Results',
+            subtitle: 'Show tracked symbols and their prices when searching the Activities overview',
+            active: this._settings.get_boolean('search-provider-enabled')
+        });
+        searchRow.connect('notify::active', () => {
+            this._settings.set_boolean('search-provider-enabled', searchRow.get_active());
+        });
+        integrationGroup.add(searchRow);
+
+        const shortcutRow = new Adw.SwitchRow({
+            title: 'Keyboard Shortcut',
+            subtitle: 'Open the Market Pulse menu with Super+M',
+            active: this._settings.get_boolean('menu-shortcut-enabled')
+        });
+        shortcutRow.connect('notify::active', () => {
+            this._settings.set_boolean('menu-shortcut-enabled', shortcutRow.get_active());
+        });
+        integrationGroup.add(shortcutRow);
+
+        const restartNote = new Adw.ActionRow({
+            title: 'Changes to this section apply on next enable',
+            subtitle: 'Toggle the extension off and on to register or remove these integrations'
+        });
+        integrationGroup.add(restartNote);
+
+        this.add(integrationGroup);
     }
 });
