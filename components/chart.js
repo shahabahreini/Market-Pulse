@@ -27,10 +27,14 @@ class ChartCanvas extends St.DrawingArea {
     setData(points, currency = 'USD') {
         this._data = Array.isArray(points) ? points : [];
         this._currency = currency;
-        this.queue_repaint();
+        if (this.is_visible()) {
+            this.queue_repaint();
+        }
     }
 
     _onRepaint(area) {
+        if (!area.is_visible()) return;
+
         const cr = area.get_context();
         const [width, height] = area.get_surface_size();
 
@@ -40,12 +44,10 @@ class ChartCanvas extends St.DrawingArea {
         cr.restore();
 
         if (this._data.length < 2) {
-            // Draw quiet empty state placeholder grid
             cr.setSourceRGBA(0.4, 0.4, 0.4, 0.2);
             cr.setLineWidth(1);
             cr.rectangle(10, 10, width - 20, height - 20);
             cr.stroke();
-            cr.$dispose?.();
             return;
         }
 
@@ -64,7 +66,7 @@ class ChartCanvas extends St.DrawingArea {
 
         const isUp = prices[prices.length - 1] >= prices[0];
 
-        // Draw horizontal subtle grid lines (3 lines)
+        // Draw horizontal grid lines (3 lines)
         cr.setSourceRGBA(0.3, 0.3, 0.35, 0.2);
         cr.setLineWidth(1);
         for (let i = 0; i <= 2; i++) {
@@ -108,7 +110,7 @@ class ChartCanvas extends St.DrawingArea {
         }
         cr.fill();
 
-        // Draw High & Low Callout Text Markers
+        // High & Low Callouts
         cr.setSourceRGBA(0.8, 0.8, 0.85, 0.8);
         cr.setFontSize(10);
         cr.moveTo(padLeft, 12);
@@ -118,7 +120,5 @@ class ChartCanvas extends St.DrawingArea {
         cr.moveTo(width - padRight - 80, height - 4);
         cr.showText(`Low: ${Formatter.formatCurrency(minPrice, this._currency)}`);
         cr.stroke();
-
-        cr.$dispose?.();
     }
 });

@@ -3,7 +3,6 @@
  * GPL-3.0 License
  */
 
-import Gio from 'gi://Gio';
 import { BaseQuoteProvider } from '../quoteProvider.js';
 import { Quote } from '../../helpers/models.js';
 
@@ -17,16 +16,32 @@ export class YahooProvider extends BaseQuoteProvider {
         const symList = symbols.join(',');
         const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symList)}`;
 
-        const json = await this._httpGetJson(url, {}, cancellable);
+        const headers = {
+            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+            'Accept': 'application/json, text/plain, */*'
+        };
+
+        const json = await this._httpGetJson(url, headers, cancellable);
         if (!json || !json.quoteResponse || !json.quoteResponse.result) {
             return {};
         }
 
         const quotesMap = {};
         for (const item of json.quoteResponse.result) {
-            const price = item.regularMarketPrice ?? item.postMarketPrice ?? item.preMarketPrice ?? 0;
-            const change = item.regularMarketChange ?? 0;
-            const changePct = item.regularMarketChangePercent ?? 0;
+            const marketState = item.marketState || 'REGULAR';
+            let price = item.regularMarketPrice ?? 0;
+            let change = item.regularMarketChange ?? 0;
+            let changePct = item.regularMarketChangePercent ?? 0;
+
+            if (marketState === 'PRE' && item.preMarketPrice) {
+                price = item.preMarketPrice;
+                change = item.preMarketChange ?? change;
+                changePct = item.preMarketChangePercent ?? changePct;
+            } else if (marketState === 'POST' && item.postMarketPrice) {
+                price = item.postMarketPrice;
+                change = item.postMarketChange ?? change;
+                changePct = item.postMarketChangePercent ?? changePct;
+            }
 
             quotesMap[item.symbol] = new Quote({
                 symbol: item.symbol,
@@ -43,7 +58,7 @@ export class YahooProvider extends BaseQuoteProvider {
                 peRatio: item.trailingPE ?? null,
                 dividendYield: item.trailingAnnualDividendYield ? item.trailingAnnualDividendYield * 100 : null,
                 earningsDate: item.earningsTimestamp ? new Date(item.earningsTimestamp * 1000).toISOString() : null,
-                marketState: item.marketState || 'REGULAR',
+                marketState: marketState,
                 timestamp: Date.now(),
                 sparkline: item.sparkline || []
             });
@@ -54,8 +69,11 @@ export class YahooProvider extends BaseQuoteProvider {
     async searchSymbols(query, cancellable = null) {
         if (!query || query.trim().length === 0) return [];
         const url = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=10&newsCount=0`;
+        const headers = {
+            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
+        };
 
-        const json = await this._httpGetJson(url, {}, cancellable);
+        const json = await this._httpGetJson(url, headers, cancellable);
         if (!json || !json.quotes) return [];
 
         return json.quotes.map(q => ({
@@ -69,7 +87,11 @@ export class YahooProvider extends BaseQuoteProvider {
 
     async fetchChartData(symbol, range = '1d', interval = '5m', cancellable = null) {
         const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=${range}&interval=${interval}`;
-        const json = await this._httpGetJson(url, {}, cancellable);
+        const headers = {
+            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
+        };
+
+        const json = await this._httpGetJson(url, headers, cancellable);
 
         if (!json || !json.chart || !json.chart.result || json.chart.result.length === 0) {
             return [];

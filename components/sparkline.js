@@ -5,7 +5,6 @@
 
 import St from 'gi://St';
 import GObject from 'gi://GObject';
-import Clutter from 'gi://Clutter';
 
 export const Sparkline = GObject.registerClass(
 class Sparkline extends St.DrawingArea {
@@ -28,10 +27,14 @@ class Sparkline extends St.DrawingArea {
     setPoints(points, isUp = true) {
         this._points = Array.isArray(points) ? points : [];
         this._isUp = isUp;
-        this.queue_repaint();
+        if (this.is_visible()) {
+            this.queue_repaint();
+        }
     }
 
     _onRepaint(area) {
+        if (!area.is_visible()) return;
+
         const cr = area.get_context();
         const [width, height] = area.get_surface_size();
 
@@ -81,6 +84,5 @@ class Sparkline extends St.DrawingArea {
             cr.setSourceRGBA(0.96, 0.42, 0.42, 0.15);
         }
         cr.fill();
-        cr.$dispose?.();
     }
 });

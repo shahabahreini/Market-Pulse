@@ -12,6 +12,7 @@ export class SettingsHelper {
         this._extension = extension;
         this._settings = extension.getSettings();
         this._signalIds = [];
+        this._saveDebounceId = null;
     }
 
     getSettings() {
@@ -46,12 +47,21 @@ export class SettingsHelper {
     }
 
     savePortfolios(portfolios) {
-        try {
-            const jsonStr = JSON.stringify(portfolios);
-            this._settings.set_string('portfolios', jsonStr);
-        } catch (e) {
-            console.error(`[market-pulse] Error saving portfolios: ${e.message}`);
+        if (this._saveDebounceId) {
+            GLib.Source.remove(this._saveDebounceId);
+            this._saveDebounceId = null;
         }
+
+        this._saveDebounceId = GLib.timeout_add(GLib.PRIORITY_LOW, 300, () => {
+            try {
+                const jsonStr = JSON.stringify(portfolios);
+                this._settings.set_string('portfolios', jsonStr);
+            } catch (e) {
+                console.error(`[market-pulse] Error saving portfolios: ${e.message}`);
+            }
+            this._saveDebounceId = null;
+            return GLib.SOURCE_REMOVE;
+        });
     }
 
     getActivePortfolio() {
@@ -132,6 +142,10 @@ export class SettingsHelper {
     }
 
     destroy() {
+        if (this._saveDebounceId) {
+            GLib.Source.remove(this._saveDebounceId);
+            this._saveDebounceId = null;
+        }
         for (const id of this._signalIds) {
             this._settings.disconnect(id);
         }

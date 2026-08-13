@@ -5,6 +5,7 @@
 
 import Soup from 'gi://Soup?version=3.0';
 import GLib from 'gi://GLib';
+import Gio from 'gi://Gio';
 
 export class BaseQuoteProvider {
     constructor(id, name, assetClasses = []) {
@@ -12,7 +13,7 @@ export class BaseQuoteProvider {
         this.name = name;
         this.assetClasses = assetClasses; // e.g. ['equity', 'crypto', 'forex']
         this._session = new Soup.Session();
-        this._session.user_agent = 'Market-Pulse-GNOME-Extension/1.0';
+        this._session.user_agent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
     }
 
     async fetchQuotes(symbols, cancellable = null) {
@@ -27,7 +28,7 @@ export class BaseQuoteProvider {
         return [];
     }
 
-    async _httpGetJson(url, headers = {}, cancellable = null) {
+    async _httpGetText(url, headers = {}, cancellable = null) {
         try {
             const uri = GLib.Uri.parse(url, GLib.UriFlags.NONE);
             const msg = Soup.Message.new_from_uri('GET', uri);
@@ -51,13 +52,23 @@ export class BaseQuoteProvider {
 
             const data = bytes.get_data();
             if (!data) return null;
-            const text = new TextDecoder('utf-8').decode(data);
-            return JSON.parse(text);
+            return new TextDecoder('utf-8').decode(data);
         } catch (e) {
             if (e.matches && e.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED)) {
                 return null;
             }
             throw e;
+        }
+    }
+
+    async _httpGetJson(url, headers = {}, cancellable = null) {
+        const text = await this._httpGetText(url, headers, cancellable);
+        if (!text) return null;
+        try {
+            return JSON.parse(text);
+        } catch (e) {
+            console.error(`[market-pulse] JSON parse error from ${this.name}: ${e.message}`);
+            return null;
         }
     }
 

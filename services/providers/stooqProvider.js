@@ -19,7 +19,7 @@ export class StooqProvider extends BaseQuoteProvider {
             try {
                 const formattedSym = sym.toLowerCase().replace('^', '');
                 const url = `https://stooq.com/q/l/?s=${formattedSym}&f=sd2t2ohlcv&h&e=csv`;
-                const text = await this._httpGetCsv(url, cancellable);
+                const text = await this._httpGetText(url, {}, cancellable);
                 if (!text) continue;
 
                 const lines = text.trim().split('\n');
@@ -49,10 +49,5 @@ export class StooqProvider extends BaseQuoteProvider {
             }
         }
         return quotesMap;
-    }
-
-    async _httpGetCsv(url, cancellable) {
-        const json = await this._httpGetJson(url, {}, cancellable);
-        return json; // In case httpGetJson returned decoded text
     }
 }
