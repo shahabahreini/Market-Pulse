@@ -1,1 +1,3 @@
-docs/market-pulse-gnome-extension-plan.md
+schemas/gschemas.compiled
+*.zip
+node_modules/

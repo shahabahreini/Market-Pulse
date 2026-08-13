@@ -1,0 +1,21 @@
+# Market Pulse — GNOME Shell Extension (llms.txt)
+
+> Market Pulse is a clean-room, production-grade GNOME Shell panel extension for live stock & cryptocurrency quotes, panel ticker cycling, interactive Cairo charts, session-bound price alerts, and local portfolio P&L tracking.
+
+## Technical Facts & Capabilities
+
+- Extension Name: Market Pulse
+- Extension UUID: market-pulse@shahabahreini.github.com
+- GSettings Schema: org.gnome.shell.extensions.market-pulse
+- Repository: https://github.com/shahabahreini/market-pulse-gnome-extension
+- License: GPL-3.0
+- GNOME Versions: 46, 47, 48, 49, 50
+- Primary Technologies: GJS (ES2022+), Libsoup 3.0, Libadwaita, Cairo 2D graphics
+- Memory Budget: < 15 MB RSS
+- Key Features:
+  - Top-bar ticker cycling (Price, %, Abs, Price + %) with pause-on-hover & right-click pin
+  - Live symbol search dialog for equities, ETFs, indices, and crypto
+  - Custom Cairo sparklines and main chart view with intraday to 5Y timeframes
+  - Multi-provider registry (Yahoo Finance, Eastmoney, Stooq, CoinGecko, Binance, Frankfurter FX)
+  - Session-bound price alerts with silent desktop notifications
+  - Local P&L calculations with instant privacy masking toggle (`hide-private-values`)

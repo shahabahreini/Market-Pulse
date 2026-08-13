@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <enum id="org.gnome.shell.extensions.market-pulse.panel-position">
+    <value value="0" nick="right"/>
+    <value value="1" nick="center"/>
+    <value value="2" nick="left"/>
+  </enum>
+
+  <enum id="org.gnome.shell.extensions.market-pulse.ticker-display-mode">
+    <value value="0" nick="price-and-pct"/>
+    <value value="1" nick="price"/>
+    <value value="2" nick="change-pct"/>
+    <value value="3" nick="change-abs"/>
+  </enum>
+
+  <schema id="org.gnome.shell.extensions.market-pulse" path="/org/gnome/shell/extensions/market-pulse/">
+    
+    <key name="active-portfolio" type="s">
+      <default>'default'</default>
+      <summary>Active Portfolio ID</summary>
+      <description>The currently selected portfolio identifier.</description>
+    </key>
+
+    <key name="portfolios" type="s">
+      <default>'{"default":{"id":"default","name":"Main Portfolio","symbols":[{"symbol":"^GSPC","name":"S&amp;P 500","type":"index","provider":"yahoo"},{"symbol":"^IXIC","name":"NASDAQ Composite","type":"index","provider":"yahoo"},{"symbol":"BTC-USD","name":"Bitcoin USD","type":"crypto","provider":"yahoo"}],"holdings":{}}}'</default>
+      <summary>Portfolios Data</summary>
+      <description>JSON encoded storage for user portfolios, symbols, and local holdings.</description>
+    </key>
+
+    <key name="providers-enabled" type="as">
+      <default>['yahoo', 'eastmoney']</default>
+      <summary>Enabled Quote Providers</summary>
+      <description>Ordered list of enabled provider IDs for quote fetching and failover.</description>
+    </key>
+
+    <key name="panel-position" enum="org.gnome.shell.extensions.market-pulse.panel-position">
+      <default>'right'</default>
+      <summary>Panel Position</summary>
+      <description>Location of the extension indicator on the GNOME Shell top panel.</description>
+    </key>
+
+    <key name="ticker-cycling-enabled" type="b">
+      <default>true</default>
+      <summary>Enable Ticker Cycling</summary>
+      <description>Whether the top panel ticker automatically cycles through portfolio symbols.</description>
+    </key>
+
+    <key name="ticker-interval" type="i">
+      <default>5</default>
+      <summary>Ticker Cycling Interval</summary>
+      <description>Interval in seconds between ticker symbol rotations.</description>
+    </key>
+
+    <key name="ticker-mode" enum="org.gnome.shell.extensions.market-pulse.ticker-display-mode">
+      <default>'price-and-pct'</default>
+      <summary>Ticker Display Mode</summary>
+      <description>Format of the price text rendered in the top panel ticker.</description>
+    </key>
+
+    <key name="ticker-pause-on-hover" type="b">
+      <default>true</default>
+      <summary>Pause Ticker on Hover</summary>
+      <description>Temporarily pause ticker symbol rotation when mouse hovers over the indicator.</description>
+    </key>
+
+    <key name="pinned-symbol" type="s">
+      <default>''</default>
+      <summary>Pinned Panel Symbol</summary>
+      <description>If set, pins the top panel ticker to display only this symbol.</description>
+    </key>
+
+    <key name="display-currency" type="s">
+      <default>'USD'</default>
+      <summary>Display Currency</summary>
+      <description>Target currency ISO code for quotes and conversion.</description>
+    </key>
+
+    <key name="hide-private-values" type="b">
+      <default>false</default>
+      <summary>Hide Portfolio Private Values</summary>
+      <description>Privacy toggle to mask exact portfolio amounts and P&amp;L values in UI.</description>
+    </key>
+
+    <key name="market-polling-interval" type="i">
+      <default>30</default>
+      <summary>Market Hours Polling Interval</summary>
+      <description>Data update polling frequency in seconds during active market hours.</description>
+    </key>
+
+    <key name="off-market-polling-interval" type="i">
+      <default>900</default>
+      <summary>Off Hours Polling Interval</summary>
+      <description>Data update polling frequency in seconds outside market hours.</description>
+    </key>
+
+    <key name="pause-on-battery" type="b">
+      <default>true</default>
+      <summary>Pause Polling on Battery</summary>
+      <description>Reduce polling frequency when host device is running on battery power.</description>
+    </key>
+
+    <key name="alerts-enabled" type="b">
+      <default>true</default>
+      <summary>Price Alerts Enabled</summary>
+      <description>Master switch for session-bound price alert notifications.</description>
+    </key>
+
+    <key name="alert-rules" type="s">
+      <default>'[]'</default>
+      <summary>Price Alert Rules</summary>
+      <description>JSON encoded storage for user configured price alert thresholds.</description>
+    </key>
+
+    <key name="quiet-hours-enabled" type="b">
+      <default>false</default>
+      <summary>Quiet Hours Enabled</summary>
+      <description>Suppress alert notifications during specified hours.</description>
+    </key>
+
+    <key name="quiet-hours-start" type="s">
+      <default>'22:00'</default>
+      <summary>Quiet Hours Start Time</summary>
+      <description>Start time for quiet hours in HH:MM format.</description>
+    </key>
+
+    <key name="quiet-hours-end" type="s">
+      <default>'07:00'</default>
+      <summary>Quiet Hours End Time</summary>
+      <description>End time for quiet hours in HH:MM format.</description>
+    </key>
+
+    <key name="colorblind-mode" type="b">
+      <default>false</default>
+      <summary>Colorblind Safe Palette</summary>
+      <description>Use blue/orange color palette instead of green/red for price changes.</description>
+    </key>
+
+    <key name="quick-settings-integration" type="b">
+      <default>true</default>
+      <summary>Quick Settings Integration</summary>
+      <description>Add a pause/resume polling toggle to GNOME Shell Quick Settings menu.</description>
+    </key>
+
+  </schema>
+</schemalist>
