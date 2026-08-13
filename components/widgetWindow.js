@@ -14,6 +14,11 @@ const WIDGET_WIDTH = 340;
 
 const SCREEN_MARGIN = 40;
 
+// Dismissal is quicker than entry, and both stay under 250ms.
+const OPEN_DURATION = 220;
+const CLOSE_DURATION = 140;
+const CLOSED_SCALE = 0.94;
+
 export const WidgetWindow = GObject.registerClass(
 class WidgetWindow extends St.BoxLayout {
     _init(settingsHelper, providerRegistry) {
@@ -50,7 +55,10 @@ class WidgetWindow extends St.BoxLayout {
         this._closeBtn = new St.Button({
             child: new St.Icon({ icon_name: 'window-close-symbolic', style_class: 'popup-menu-icon' }),
             style_class: 'button market-pulse-icon-btn',
-            accessible_name: 'Close desktop widget'
+            accessible_name: 'Close desktop widget',
+            track_hover: true,
+            reactive: true,
+            can_focus: true
         });
         this._closeBtn.connect('clicked', () => this._requestClose());
         header.add_child(this._closeBtn);
@@ -69,9 +77,25 @@ class WidgetWindow extends St.BoxLayout {
         this._onClose = handler;
     }
 
+    /**
+     * Dismissal from the close button or Escape: fade out, then let the owner's
+     * handler destroy us. destroy() stays synchronous so disable() can tear the
+     * widget down immediately. The guard blocks a second click mid-transition.
+     */
     _requestClose() {
-        const handler = this._onClose;
-        handler?.();
+        if (this._closing) return;
+        this._closing = true;
+        this._endDrag();
+
+        this.remove_all_transitions();
+        this.ease({
+            opacity: 0,
+            scale_x: CLOSED_SCALE,
+            scale_y: CLOSED_SCALE,
+            duration: CLOSE_DURATION,
+            mode: Clutter.AnimationMode.EASE_IN_QUAD,
+            onComplete: () => this._onClose?.()
+        });
     }
 
     /** True when `actor` is the close button or lives inside it. */
@@ -184,7 +208,21 @@ class WidgetWindow extends St.BoxLayout {
             }
         }
 
+        // Scale about the centre rather than the top-left corner.
+        this.set_pivot_point(0.5, 0.5);
+        this.remove_all_transitions();
+        this.opacity = 0;
+        this.scale_x = CLOSED_SCALE;
+        this.scale_y = CLOSED_SCALE;
         this.visible = true;
+        this.ease({
+            opacity: 255,
+            scale_x: 1,
+            scale_y: 1,
+            duration: OPEN_DURATION,
+            mode: Clutter.AnimationMode.EASE_OUT_BACK
+        });
+
         this.grab_key_focus();   // so Escape reaches the handler
         this._loadChart();
     }
@@ -223,6 +261,8 @@ class WidgetWindow extends St.BoxLayout {
         if (this._destroyed) return;
         this._destroyed = true;
 
+        // A live transition would fire onComplete against a disposed actor.
+        this.remove_all_transitions();
         this._endDrag();
         if (this._addedToChrome) {
             Main.layoutManager.removeChrome(this);

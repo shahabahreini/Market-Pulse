@@ -1,9 +1,11 @@
 /* Market Pulse — symbol detail card
  * SPDX-License-Identifier: GPL-3.0-or-later
+ * Zen & Modern aesthetic with segmented controls and calm micro-interactions
  */
 
 import St from 'gi://St';
 import GObject from 'gi://GObject';
+import GLib from 'gi://GLib';
 import Clutter from 'gi://Clutter';
 import Pango from 'gi://Pango';
 import { ChartCanvas } from './chart.js';
@@ -37,6 +39,8 @@ class DetailView extends St.BoxLayout {
         this._interval = '5m';
         this._chartSerial = 0;
         this._comparisonSymbols = [];
+        this._copyResetTimer = null;
+
         this._headerBox = new St.BoxLayout({
             orientation: Clutter.Orientation.HORIZONTAL,
             style_class: 'market-pulse-detail-header'
@@ -49,20 +53,25 @@ class DetailView extends St.BoxLayout {
         this._titleLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END;
         this._marketStatusBadge = new St.Label({ text: '', style_class: 'market-pulse-status-badge' });
 
+        this._copyIcon = new St.Icon({ icon_name: 'edit-copy-symbolic', style_class: 'popup-menu-icon' });
         this._copyBtn = new St.Button({
-            child: new St.Icon({ icon_name: 'edit-copy-symbolic', style_class: 'popup-menu-icon' }),
+            child: this._copyIcon,
             style_class: 'button market-pulse-icon-btn',
-            accessible_name: 'Copy quote to clipboard'
+            accessible_name: 'Copy quote to clipboard',
+            track_hover: true,
+            reactive: true,
+            can_focus: true
         });
         this._copyBtn.connect('clicked', () => this._copyQuote());
 
-        // Detach into the always-on-top desktop widget. The same button closes
-        // it again, so there is a close path that does not depend on the
-        // widget's own event handling.
+        // Detach into the always-on-top desktop widget.
         this._popOutBtn = new St.Button({
             child: new St.Icon({ icon_name: 'view-restore-symbolic', style_class: 'popup-menu-icon' }),
             style_class: 'button market-pulse-icon-btn',
-            accessible_name: 'Open as desktop widget'
+            accessible_name: 'Open as desktop widget',
+            track_hover: true,
+            reactive: true,
+            can_focus: true
         });
         this._popOutBtn.connect('clicked', () => {
             if (this._currentSymbol) this._onPopOut?.(this._currentSymbol);
@@ -73,11 +82,14 @@ class DetailView extends St.BoxLayout {
         this._headerBox.add_child(this._popOutBtn);
         this._headerBox.add_child(this._copyBtn);
         this.add_child(this._headerBox);
+
         this._noticeLabel = new St.Label({ text: '', style_class: 'market-pulse-detail-notice' });
         this._noticeLabel.hide();
         this.add_child(this._noticeLabel);
-        this._chart = new ChartCanvas(320, 150);
+
+        this._chart = new ChartCanvas(320, 150, settingsHelper?.get('colorblind-mode'));
         this.add_child(this._chart);
+
         this._tfBox = new St.BoxLayout({
             orientation: Clutter.Orientation.HORIZONTAL,
             style_class: 'market-pulse-tf-box'
@@ -87,7 +99,10 @@ class DetailView extends St.BoxLayout {
             const btn = new St.Button({
                 label: tf.label,
                 style_class: 'button market-pulse-tf-btn',
-                accessible_name: `Show ${tf.label} chart`
+                accessible_name: `Show ${tf.label} chart`,
+                track_hover: true,
+                reactive: true,
+                can_focus: true
             });
             btn.connect('clicked', () => {
                 this._range = tf.range;
@@ -99,12 +114,14 @@ class DetailView extends St.BoxLayout {
             this._tfButtons.set(tf.range, btn);
         }
 
-        // Comparison toggle: overlays the other portfolio symbols
-        // as normalized percent series.
+        // Comparison toggle: overlays other portfolio symbols as normalized percent series
         this._compareBtn = new St.Button({
             label: 'Compare',
             style_class: 'button market-pulse-tf-btn market-pulse-compare-btn',
-            accessible_name: 'Toggle comparison overlay'
+            accessible_name: 'Toggle comparison overlay',
+            track_hover: true,
+            reactive: true,
+            can_focus: true
         });
         this._compareBtn.connect('clicked', () => this._toggleComparison());
         this._tfBox.add_child(this._compareBtn);
@@ -117,7 +134,11 @@ class DetailView extends St.BoxLayout {
         this.add_child(this._statsGrid);
 
         this.connect('destroy', () => {
-            this._chartSerial++;   // invalidate any in-flight chart fetch
+            this._chartSerial++;   // invalidate in-flight chart fetch
+            if (this._copyResetTimer) {
+                GLib.Source.remove(this._copyResetTimer);
+                this._copyResetTimer = null;
+            }
             this._currentSymbol = null;
             this._quote = null;
             this._onPopOut = null;
@@ -151,6 +172,22 @@ class DetailView extends St.BoxLayout {
             `${Formatter.formatCurrency(this._quote.price, this._quote.currency)} ` +
             `(${Formatter.formatPercent(this._quote.changePercent)})`;
         copyToClipboard(text);
+
+        // Zen micro-interaction: temporary checkmark confirmation
+        if (this._copyIcon) {
+            this._copyIcon.icon_name = 'object-select-symbolic';
+            if (this._copyResetTimer) {
+                GLib.Source.remove(this._copyResetTimer);
+                this._copyResetTimer = null;
+            }
+            this._copyResetTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1200, () => {
+                if (this._copyIcon) {
+                    this._copyIcon.icon_name = 'edit-copy-symbolic';
+                }
+                this._copyResetTimer = null;
+                return GLib.SOURCE_REMOVE;
+            });
+        }
     }
 
     setQuoteData(symbolObj, quote) {
@@ -172,7 +209,7 @@ class DetailView extends St.BoxLayout {
         this._titleLabel.set_text(`${symbolObj.displayLabel} (${quote.symbol})`);
         this._marketStatusBadge.set_text(mStatus.label);
 
-        // Per-symbol error and staleness states.
+        // Per-symbol error and staleness states
         if (quote.error) {
             this._showNotice(`${quote.error} — showing last known values from ${Formatter.formatTime(quote.timestamp)}`);
         } else if (quote.isStale?.()) {
@@ -203,7 +240,6 @@ class DetailView extends St.BoxLayout {
             { label: 'Volume', val: Formatter.formatNumber(quote.volume) },
             { label: 'Market Cap', val: Formatter.formatNumber(quote.marketCap) },
             { label: 'P/E Ratio', val: quote.peRatio ? quote.peRatio.toFixed(2) : '—' },
-            // Dividends & earnings where the provider supplies them.
             { label: 'Div Yield', val: quote.dividendYield ? `${quote.dividendYield.toFixed(2)}%` : '—' },
             { label: 'Next Earnings', val: Formatter.formatDate(quote.earningsDate) },
             { label: 'Exchange', val: quote.exchangeName || '—' }
@@ -238,7 +274,7 @@ class DetailView extends St.BoxLayout {
             this._comparisonSymbols = [];
             this._compareBtn.remove_style_class_name('selected');
         } else {
-            // Up to two peers from the active portfolio(2–3 series).
+            // Up to two peers from the active portfolio
             const portfolio = this._settings?.getActivePortfolio();
             this._comparisonSymbols = (portfolio?.symbols ?? [])
                 .filter(s => s.symbol !== this._currentSymbol?.symbol)
@@ -255,7 +291,6 @@ class DetailView extends St.BoxLayout {
     async loadChartData() {
         if (!this._currentSymbol) return;
 
-        // Stale-response guard: timeframe clicks can outrun their fetches.
         const serial = ++this._chartSerial;
 
         try {

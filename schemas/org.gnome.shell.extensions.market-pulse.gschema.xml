@@ -165,12 +165,6 @@
       <description>Set once the onboarding dialog offering a demo portfolio has been shown.</description>
     </key>
 
-    <key name="comparison-symbols" type="as">
-      <default>[]</default>
-      <summary>Chart Comparison Symbols</summary>
-      <description>Additional symbols overlaid on the detail chart as normalized percentage series.</description>
-    </key>
-
     <key name="symbol-display-overrides" type="s">
       <default>'{}'</default>
       <summary>Per-Symbol Display Overrides</summary>
@@ -187,12 +181,6 @@
       <default>''</default>
       <summary>Desktop Widget Position</summary>
       <description>JSON encoded x and y screen coordinates the detached chart widget was last dragged to.</description>
-    </key>
-
-    <key name="schema-version" type="i">
-      <default>1</default>
-      <summary>Settings Schema Version</summary>
-      <description>Internal version marker used by the settings migration framework.</description>
     </key>
 
   </schema>

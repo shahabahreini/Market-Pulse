@@ -68,7 +68,10 @@ export class StocksMenu {
         const refreshBtn = new St.Button({
             child: new St.Icon({ icon_name: 'view-refresh-symbolic', style_class: 'popup-menu-icon' }),
             style_class: 'button market-pulse-icon-btn',
-            accessible_name: 'Refresh quotes'
+            accessible_name: 'Refresh quotes',
+            track_hover: true,
+            reactive: true,
+            can_focus: true
         });
         this._connect(refreshBtn, 'clicked', () => this._scheduler.triggerRefresh());
         headerBox.add_child(refreshBtn);
@@ -76,7 +79,10 @@ export class StocksMenu {
         const maskBtn = new St.Button({
             child: new St.Icon({ icon_name: 'security-high-symbolic', style_class: 'popup-menu-icon' }),
             style_class: 'button market-pulse-icon-btn',
-            accessible_name: 'Toggle privacy masking'
+            accessible_name: 'Toggle privacy masking',
+            track_hover: true,
+            reactive: true,
+            can_focus: true
         });
         this._connect(maskBtn, 'clicked', () => {
             this._settings.setBoolean('hide-private-values', !this._settings.get('hide-private-values'));
@@ -87,7 +93,10 @@ export class StocksMenu {
         const addBtn = new St.Button({
             child: new St.Icon({ icon_name: 'list-add-symbolic', style_class: 'popup-menu-icon' }),
             style_class: 'button market-pulse-icon-btn',
-            accessible_name: 'Add symbol'
+            accessible_name: 'Add symbol',
+            track_hover: true,
+            reactive: true,
+            can_focus: true
         });
         this._connect(addBtn, 'clicked', () => {
             this._menu.close();
@@ -168,7 +177,10 @@ export class StocksMenu {
         const settingsBtn = new St.Button({
             label: 'Settings',
             style_class: 'button market-pulse-settings-link-btn',
-            accessible_name: 'Open Market Pulse settings'
+            accessible_name: 'Open Market Pulse settings',
+            track_hover: true,
+            reactive: true,
+            can_focus: true
         });
         this._connect(settingsBtn, 'clicked', () => {
             this._menu.close();
@@ -229,7 +241,10 @@ export class StocksMenu {
             const btn = new St.Button({
                 label: portfolios[id].name,
                 style_class: 'button market-pulse-popular-chip',
-                accessible_name: `Switch to ${portfolios[id].name}`
+                accessible_name: `Switch to ${portfolios[id].name}`,
+                track_hover: true,
+                reactive: true,
+                can_focus: true
             });
             if (id === activeId) btn.add_style_class_name('selected');
             btn.connect('clicked', () => {
@@ -278,7 +293,13 @@ export class StocksMenu {
 
         for (const [index, symObj] of symbols.entries()) {
             const quote = this._quotesMap[symObj.symbol];
-            const rowBtn = new St.Button({ style_class: 'button market-pulse-symbol-row', x_expand: true });
+            const rowBtn = new St.Button({
+                style_class: 'button market-pulse-symbol-row',
+                x_expand: true,
+                track_hover: true,
+                reactive: true,
+                can_focus: true
+            });
             const rowBox = new St.BoxLayout({ orientation: Clutter.Orientation.HORIZONTAL, style_class: 'market-pulse-row-box' });
 
             const hasError = !!quote?.error;
@@ -359,7 +380,10 @@ export class StocksMenu {
             const moreBtn = new St.Button({
                 child: new St.Icon({ icon_name: 'view-more-symbolic', style_class: 'popup-menu-icon' }),
                 style_class: 'button market-pulse-icon-btn market-pulse-row-more-btn',
-                accessible_name: `Manage ${symObj.symbol}`
+                accessible_name: `Manage ${symObj.symbol}`,
+                track_hover: true,
+                reactive: true,
+                can_focus: true
             });
             topLine.add_child(moreBtn);
             rowContainer.add_child(topLine);
@@ -405,7 +429,9 @@ export class StocksMenu {
                 child: new St.Icon({ icon_name: iconName, style_class: 'popup-menu-icon' }),
                 style_class: 'button market-pulse-icon-btn',
                 accessible_name: label,
-                reactive: sensitive
+                reactive: sensitive,
+                track_hover: sensitive,
+                can_focus: sensitive
             });
             if (!sensitive) btn.add_style_class_name('market-pulse-action-disabled');
             else btn.connect('clicked', callback);

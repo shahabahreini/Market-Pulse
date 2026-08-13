@@ -1,9 +1,11 @@
 /* Market Pulse — menu row sparkline
  * SPDX-License-Identifier: GPL-3.0-or-later
+ * Zen & Modern aesthetic with organic tones, rounded geometry, and soft gradients
  */
 
 import St from 'gi://St';
 import GObject from 'gi://GObject';
+import Cairo from 'cairo';
 
 export const Sparkline = GObject.registerClass(
 class Sparkline extends St.DrawingArea {
@@ -38,8 +40,6 @@ class Sparkline extends St.DrawingArea {
         try {
             this._draw(cr, area);
         } finally {
-            // Cairo contexts are not GC-managed in GJS — an undisposed context
-            // leaks the surface on every single repaint.
             cr.$dispose();
         }
     }
@@ -57,9 +57,12 @@ class Sparkline extends St.DrawingArea {
         const min = Math.min(...this._points);
         const max = Math.max(...this._points);
         const range = max - min || 1;
-        const padding = 2;
+        const padding = 3;
 
         const stepX = (width - padding * 2) / (this._points.length - 1);
+
+        cr.setLineJoin(1); // CAIRO_LINE_JOIN_ROUND
+        cr.setLineCap(1);  // CAIRO_LINE_CAP_ROUND
 
         cr.newPath();
         for (let i = 0; i < this._points.length; i++) {
@@ -70,27 +73,34 @@ class Sparkline extends St.DrawingArea {
             else cr.lineTo(x, y);
         }
 
-        // Color selection
+        // Zen color selection
+        let color;
         if (this._isUp) {
-            if (this._isColorblind) cr.setSourceRGBA(0.22, 0.58, 0.96, 0.9); // Blue
-            else cr.setSourceRGBA(0.2, 0.83, 0.6, 0.9); // Mint/Green
+            color = this._isColorblind ? [0.38, 0.64, 0.88] : [0.38, 0.72, 0.56];
         } else {
-            if (this._isColorblind) cr.setSourceRGBA(0.96, 0.55, 0.18, 0.9); // Orange
-            else cr.setSourceRGBA(0.96, 0.42, 0.42, 0.9); // Soft Red
+            color = this._isColorblind ? [0.88, 0.62, 0.35] : [0.88, 0.48, 0.48];
         }
 
-        cr.setLineWidth(1.5);
+        cr.setSourceRGBA(color[0], color[1], color[2], 0.95);
+        cr.setLineWidth(1.6);
         cr.strokePreserve();
 
-        // Area fill beneath sparkline
+        // Area fill beneath sparkline with gentle vertical gradient
         cr.lineTo(width - padding, height);
         cr.lineTo(padding, height);
         cr.closePath();
 
-        if (this._isUp) {
-            cr.setSourceRGBA(0.2, 0.83, 0.6, 0.15);
+        if (Cairo?.LinearGradient) {
+            try {
+                const pat = new Cairo.LinearGradient(0, padding, 0, height);
+                pat.addColorStopRGBA(0, color[0], color[1], color[2], 0.22);
+                pat.addColorStopRGBA(1, color[0], color[1], color[2], 0.02);
+                cr.setSource(pat);
+            } catch {
+                cr.setSourceRGBA(color[0], color[1], color[2], 0.12);
+            }
         } else {
-            cr.setSourceRGBA(0.96, 0.42, 0.42, 0.15);
+            cr.setSourceRGBA(color[0], color[1], color[2], 0.12);
         }
         cr.fill();
     }

@@ -33,7 +33,7 @@ zip: compile-schemas
 	rm -f $(UUID).zip
 	zip -r $(UUID).zip $(SOURCES) README.md LICENSE
 
-# Plan §A2: 10x enable/disable must leave no leaked sources, actors or signals.
+# 10x enable/disable must leave no leaked sources, actors or signals.
 lifecycle-test:
 	@echo "Running 10x enable/disable cycle — watch the journal for [market-pulse] errors."
 	@for i in $$(seq 1 10); do \

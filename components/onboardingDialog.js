@@ -42,7 +42,8 @@ class OnboardingDialog extends ModalDialog.ModalDialog {
             const btn = new St.Button({
                 style_class: 'button market-pulse-preset-row',
                 accessible_name: `Start with ${preset.label}`,
-                x_expand: true
+                x_expand: true,
+                can_focus: true
             });
 
             const box = new St.BoxLayout({

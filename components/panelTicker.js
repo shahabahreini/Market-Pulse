@@ -1,5 +1,6 @@
 /* Market Pulse — panel indicator
  * SPDX-License-Identifier: GPL-3.0-or-later
+ * Zen & Modern aesthetic with gentle text transition and clean layout
  */
 
 import St from 'gi://St';
@@ -38,8 +39,7 @@ class PanelTicker extends PanelMenu.Button {
             y_align: Clutter.ActorAlign.CENTER,
             style_class: 'market-pulse-panel-label'
         });
-        // Without this a long instrument name stretches the panel indefinitely;
-        // the max-width in the stylesheet cannot clip a label's natural width.
+        // Without this a long instrument name stretches the panel indefinitely
         this._label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
         this._box.add_child(this._label);
 
@@ -98,7 +98,9 @@ class PanelTicker extends PanelMenu.Button {
         const interval = Math.max(2, this._settingsHelper.get('ticker-interval') || 5);
 
         this._timerId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, interval, () => {
-            if (this._settingsHelper.get('ticker-cycling-enabled') && !this._isHovered) {
+            // Schema default is true, so an unreadable key must not freeze cycling.
+            const cycling = this._settingsHelper.get('ticker-cycling-enabled') ?? true;
+            if (cycling && !this._isHovered) {
                 this.advanceSymbol();
             }
             return GLib.SOURCE_CONTINUE;
@@ -135,7 +137,7 @@ class PanelTicker extends PanelMenu.Button {
         const portfolio = this._settingsHelper.getActivePortfolio();
         const symbols = portfolio.symbols;
         if (symbols.length === 0) {
-            this._label.set_text('Market Pulse');
+            this._setLabelTextAnimated('Market Pulse');
             this._pinIcon.hide();
             return;
         }
@@ -173,13 +175,39 @@ class PanelTicker extends PanelMenu.Button {
             else text += `${priceStr} (${pctStr})`;
         }
 
-        this._label.set_text(text);
+        this._setLabelTextAnimated(text);
         if (pinned === targetSymObj.symbol) this._pinIcon.show();
         else this._pinIcon.hide();
     }
 
+    /** Gentle calm cross-fade when text changes. */
+    _setLabelTextAnimated(text) {
+        if (this._label.text === text) return;
+
+        if (this.is_mapped() && this._label.is_visible()) {
+            this._label.remove_all_transitions();
+            this._label.ease({
+                opacity: 60,
+                duration: 90,
+                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                onComplete: () => {
+                    this._label.set_text(text);
+                    this._label.ease({
+                        opacity: 255,
+                        duration: 130,
+                        mode: Clutter.AnimationMode.EASE_OUT_QUAD
+                    });
+                }
+            });
+        } else {
+            this._label.set_text(text);
+            this._label.opacity = 255;
+        }
+    }
+
     destroy() {
         this.stopTickerTimer();
+        this._label.remove_all_transitions();
         super.destroy();
     }
 });

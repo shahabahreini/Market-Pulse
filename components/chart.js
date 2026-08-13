@@ -1,27 +1,32 @@
 /* Market Pulse — chart drawing area
  * SPDX-License-Identifier: GPL-3.0-or-later
+ * Zen & Modern aesthetic with organic tones, rounded geometry, and soft gradients
  */
 
 import St from 'gi://St';
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
+import Cairo from 'cairo';
 import { Formatter } from '../helpers/formatter.js';
 
-// Soft, low-saturation palette (.4). Index 0 is the primary series.
+// Zen calming, organic palette
 const SERIES_COLORS = [
-    [0.20, 0.83, 0.60],
-    [0.45, 0.60, 0.95],
-    [0.95, 0.70, 0.35]
+    [0.38, 0.72, 0.56], // Zen Sage / Eucalyptus
+    [0.40, 0.65, 0.85], // Ocean Slate Blue
+    [0.88, 0.64, 0.38], // Warm Amber
+    [0.72, 0.58, 0.85]  // Muted Lavender
 ];
-const SERIES_COLORS_CB = [
-    [0.22, 0.58, 0.96],
-    [0.96, 0.55, 0.18],
-    [0.55, 0.55, 0.60]
-];
-const DOWN_COLOR = [0.96, 0.42, 0.42];
-const DOWN_COLOR_CB = [0.96, 0.55, 0.18];
 
-const ANIMATION_MS = 250;
+const SERIES_COLORS_CB = [
+    [0.38, 0.64, 0.88], // Slate Blue
+    [0.88, 0.62, 0.35], // Warm Amber
+    [0.60, 0.65, 0.70]  // Muted Stone
+];
+
+const DOWN_COLOR = [0.88, 0.48, 0.48];     // Soft Warm Terracotta / Rose
+const DOWN_COLOR_CB = [0.88, 0.62, 0.35];  // Calming Amber
+
+const ANIMATION_MS = 320; // Serene, smooth duration
 
 export const ChartCanvas = GObject.registerClass(
 class ChartCanvas extends St.DrawingArea {
@@ -59,7 +64,7 @@ class ChartCanvas extends St.DrawingArea {
         this._currency = currency;
         this._series = (seriesList || [])
             .filter(s => Array.isArray(s.points) && s.points.length > 1)
-            .slice(0, 3);
+            .slice(0, 4);
         this._animateIn();
     }
 
@@ -78,8 +83,7 @@ class ChartCanvas extends St.DrawingArea {
 
         this._progress = 0;
 
-        // Driven by the actor's frame clock, so it stops with the actor and
-        // never runs while the menu is closed.
+        // Driven by the actor's frame clock, stopping cleanly with the actor
         this._timeline = new Clutter.Timeline({
             actor: this,
             duration: ANIMATION_MS,
@@ -109,15 +113,12 @@ class ChartCanvas extends St.DrawingArea {
     }
 
     _onRepaint(area) {
-        // Lazy draw: nothing is rendered while the menu is closed.
         if (!area.is_visible()) return;
 
         const cr = area.get_context();
         try {
             this._draw(cr, area);
         } finally {
-            // Cairo contexts are not GC-managed in GJS — an undisposed context
-            // leaks the surface on every single repaint.
             cr.$dispose();
         }
     }
@@ -136,15 +137,13 @@ class ChartCanvas extends St.DrawingArea {
             return;
         }
 
-        const padLeft = 10;
-        const padRight = 10;
+        const padLeft = 12;
+        const padRight = 12;
         const padTop = 20;
-        const padBottom = 20;
+        const padBottom = 22;
         const chartW = width - padLeft - padRight;
         const chartH = height - padTop - padBottom;
 
-        // Comparison mode plots percent change from each series' first point,
-        // so a $60k asset and a $150 asset share one vertical scale.
         const valuesFor = (series) => this._comparisonMode
             ? series.points.map(p => ((p.price - series.points[0].price) / series.points[0].price) * 100)
             : series.points.map(p => p.price);
@@ -157,6 +156,10 @@ class ChartCanvas extends St.DrawingArea {
         this._drawGrid(cr, padLeft, padTop, width - padRight, chartH);
 
         const palette = this._palette();
+
+        // Enable rounded stroke rendering for organic Zen lines
+        cr.setLineJoin(1); // CAIRO_LINE_JOIN_ROUND
+        cr.setLineCap(1);  // CAIRO_LINE_CAP_ROUND
 
         drawable.forEach((series, index) => {
             const values = valuesFor(series);
@@ -179,18 +182,29 @@ class ChartCanvas extends St.DrawingArea {
                 else cr.lineTo(x, y);
             }
 
-            cr.setSourceRGBA(color[0], color[1], color[2], 1.0);
+            cr.setSourceRGBA(color[0], color[1], color[2], 0.95);
             cr.setLineWidth(this._comparisonMode ? 1.6 : 2.0);
             cr.strokePreserve();
 
-            // Area fill only for the single-series view; overlaid fills muddy
-            // a comparison chart.
+            // Soft vertical gradient fill for single series
             if (!this._comparisonMode) {
                 const lastX = padLeft + (visibleCount - 1) * stepX;
                 cr.lineTo(lastX, height - padBottom);
                 cr.lineTo(padLeft, height - padBottom);
                 cr.closePath();
-                cr.setSourceRGBA(color[0], color[1], color[2], 0.12);
+
+                if (Cairo?.LinearGradient) {
+                    try {
+                        const pat = new Cairo.LinearGradient(0, padTop, 0, height - padBottom);
+                        pat.addColorStopRGBA(0, color[0], color[1], color[2], 0.20);
+                        pat.addColorStopRGBA(1, color[0], color[1], color[2], 0.01);
+                        cr.setSource(pat);
+                    } catch {
+                        cr.setSourceRGBA(color[0], color[1], color[2], 0.10);
+                    }
+                } else {
+                    cr.setSourceRGBA(color[0], color[1], color[2], 0.10);
+                }
                 cr.fill();
             } else {
                 cr.newPath();
@@ -199,21 +213,23 @@ class ChartCanvas extends St.DrawingArea {
 
         if (this._comparisonMode) {
             this._drawComparisonLegend(cr, drawable, padLeft, height);
-            this._drawAxisLabel(cr, `${maxVal >= 0 ? '+' : ''}${maxVal.toFixed(1)}%`, padLeft, 12);
-            this._drawAxisLabel(cr, `${minVal >= 0 ? '+' : ''}${minVal.toFixed(1)}%`, padLeft, height - 4);
+            this._drawAxisLabel(cr, `${maxVal >= 0 ? '+' : ''}${maxVal.toFixed(1)}%`, padLeft, 13);
+            this._drawAxisLabel(cr, `${minVal >= 0 ? '+' : ''}${minVal.toFixed(1)}%`, padLeft, height - 5);
         } else {
-            this._drawAxisLabel(cr, `High: ${Formatter.formatCurrency(maxVal, this._currency)}`, padLeft, 12);
-            this._drawAxisLabel(cr, `Low: ${Formatter.formatCurrency(minVal, this._currency)}`, width - padRight - 90, height - 4);
+            this._drawAxisLabel(cr, `High: ${Formatter.formatCurrency(maxVal, this._currency)}`, padLeft, 13);
+            this._drawAxisLabel(cr, `Low: ${Formatter.formatCurrency(minVal, this._currency)}`, width - padRight - 90, height - 5);
         }
     }
 
     _drawPlaceholder(cr, width, height) {
-        cr.setSourceRGBA(0.4, 0.4, 0.4, 0.2);
+        cr.setSourceRGBA(0.4, 0.4, 0.45, 0.15);
         cr.setLineWidth(1);
-        cr.rectangle(10, 10, width - 20, height - 20);
+        cr.setLineJoin(1);
+        cr.setLineCap(1);
+        cr.rectangle(12, 12, width - 24, height - 24);
         cr.stroke();
 
-        cr.setSourceRGBA(0.6, 0.6, 0.65, 0.6);
+        cr.setSourceRGBA(0.7, 0.7, 0.75, 0.5);
         cr.setFontSize(10);
         cr.moveTo(width / 2 - 36, height / 2);
         cr.showText('No chart data');
@@ -221,7 +237,7 @@ class ChartCanvas extends St.DrawingArea {
     }
 
     _drawGrid(cr, x0, y0, x1, chartH) {
-        cr.setSourceRGBA(0.3, 0.3, 0.35, 0.2);
+        cr.setSourceRGBA(0.8, 0.8, 0.85, 0.06);
         cr.setLineWidth(1);
         for (let i = 0; i <= 2; i++) {
             const y = y0 + (chartH / 2) * i;
@@ -239,7 +255,7 @@ class ChartCanvas extends St.DrawingArea {
         cr.setFontSize(9);
         drawable.forEach((series, index) => {
             const color = palette[index % palette.length];
-            cr.setSourceRGBA(color[0], color[1], color[2], 1.0);
+            cr.setSourceRGBA(color[0], color[1], color[2], 0.95);
             cr.rectangle(x, y - 6, 6, 6);
             cr.fill();
 
@@ -252,7 +268,7 @@ class ChartCanvas extends St.DrawingArea {
     }
 
     _drawAxisLabel(cr, text, x, y) {
-        cr.setSourceRGBA(0.8, 0.8, 0.85, 0.8);
+        cr.setSourceRGBA(0.8, 0.8, 0.85, 0.75);
         cr.setFontSize(10);
         cr.moveTo(x, y);
         cr.showText(text);

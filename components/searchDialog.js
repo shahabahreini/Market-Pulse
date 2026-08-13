@@ -1,5 +1,6 @@
 /* Market Pulse — symbol search dialog
  * SPDX-License-Identifier: GPL-3.0-or-later
+ * Zen & Modern aesthetic with dynamic suggestions and clean responsive layout
  */
 
 import St from 'gi://St';
@@ -23,18 +24,17 @@ class SymbolSearchDialog extends ModalDialog.ModalDialog {
         this._searchCancellable = null;
         this._searchSerial = 0;
 
-        // ModalDialog does not destroy itself on close — do it explicitly so
-        // the debounce source and in-flight search never outlive the dialog.
         this.connect('closed', () => this.destroy());
 
         const content = this.contentLayout;
-        content.set_style('width: 440px; padding: 16px;');
+        content.set_style('width: 440px; padding: 20px;');
 
         const title = new St.Label({
             text: 'Add Symbol',
             style_class: 'market-pulse-dialog-title'
         });
         content.add_child(title);
+
         this._entry = new St.Entry({
             hint_text: 'Search AAPL, TSLA, BTC-USD, S&P 500...',
             style_class: 'market-pulse-search-entry',
@@ -45,11 +45,13 @@ class SymbolSearchDialog extends ModalDialog.ModalDialog {
         this._entry.clutter_text.connect('text-changed', () => {
             this._onSearchTextChanged();
         });
+
+        // --- Search Results View ---
         this._resultsScroll = new St.ScrollView({
             style_class: 'market-pulse-search-results-scroll',
             hscrollbar_policy: St.PolicyType.NEVER,
             vscrollbar_policy: St.PolicyType.AUTOMATIC,
-            height: 240
+            height: 220
         });
 
         this._resultsBox = new St.BoxLayout({
@@ -57,8 +59,22 @@ class SymbolSearchDialog extends ModalDialog.ModalDialog {
             style_class: 'market-pulse-search-results-box'
         });
         this._resultsScroll.add_child(this._resultsBox);
+        this._resultsScroll.hide();
         content.add_child(this._resultsScroll);
-        this._popularBox = new St.BoxLayout({
+
+        // --- Suggestions & Presets View (shown when search is empty) ---
+        this._suggestionsBox = new St.BoxLayout({
+            orientation: Clutter.Orientation.VERTICAL,
+            style_class: 'market-pulse-suggestions-box'
+        });
+
+        // Popular section
+        this._suggestionsBox.add_child(new St.Label({
+            text: 'POPULAR INSTRUMENTS',
+            style_class: 'market-pulse-section-header'
+        }));
+
+        const popularBox = new St.BoxLayout({
             orientation: Clutter.Orientation.HORIZONTAL,
             style_class: 'market-pulse-popular-box'
         });
@@ -68,60 +84,60 @@ class SymbolSearchDialog extends ModalDialog.ModalDialog {
             { sym: 'BTC-USD', name: 'Bitcoin' },
             { sym: 'AAPL', name: 'Apple' }
         ];
-
         for (const item of popular) {
             const btn = new St.Button({
                 label: item.sym,
                 style_class: 'button market-pulse-popular-chip',
-                accessible_name: `Add ${item.name}`
+                accessible_name: `Add ${item.name}`,
+                can_focus: true
             });
             btn.connect('clicked', () => {
                 this._addSymbol(new SymbolData({ symbol: item.sym, name: item.name }));
             });
-            this._popularBox.add_child(btn);
+            popularBox.add_child(btn);
         }
-        content.add_child(this._popularBox);
+        this._suggestionsBox.add_child(popularBox);
 
-        // Whole starter lists in one press, for users who do not have a
-        // particular ticker in mind.
+        // Starter lists section
+        this._suggestionsBox.add_child(new St.Label({
+            text: 'STARTER WATCHLISTS',
+            style_class: 'market-pulse-section-header'
+        }));
+
         const presetBox = new St.BoxLayout({
             orientation: Clutter.Orientation.HORIZONTAL,
             style_class: 'market-pulse-popular-box'
         });
-        presetBox.add_child(new St.Label({
-            text: 'Lists:',
-            style_class: 'market-pulse-recent-label',
-            y_align: Clutter.ActorAlign.CENTER
-        }));
         for (const preset of PRESETS) {
             const btn = new St.Button({
                 label: preset.label,
                 style_class: 'button market-pulse-popular-chip',
-                accessible_name: `Add ${preset.label}: ${preset.description}`
+                accessible_name: `Add ${preset.label}: ${preset.description}`,
+                can_focus: true
             });
             btn.connect('clicked', () => this._addPreset(preset));
             presetBox.add_child(btn);
         }
-        content.add_child(presetBox);
+        this._suggestionsBox.add_child(presetBox);
 
-        // Recent searches — one click back to a previous lookup.
+        // Recent searches section (if any)
         const recent = settingsHelper.getRecentSearches();
         if (recent.length > 0) {
+            this._suggestionsBox.add_child(new St.Label({
+                text: 'RECENT SEARCHES',
+                style_class: 'market-pulse-section-header'
+            }));
+
             const recentBox = new St.BoxLayout({
                 orientation: Clutter.Orientation.HORIZONTAL,
                 style_class: 'market-pulse-recent-box'
             });
-            recentBox.add_child(new St.Label({
-                text: 'Recent:',
-                style_class: 'market-pulse-recent-label',
-                y_align: Clutter.ActorAlign.CENTER
-            }));
-
             for (const query of recent) {
                 const btn = new St.Button({
                     label: query,
                     style_class: 'button market-pulse-popular-chip',
-                    accessible_name: `Search again for ${query}`
+                    accessible_name: `Search again for ${query}`,
+                    can_focus: true
                 });
                 btn.connect('clicked', () => {
                     this._entry.set_text(query);
@@ -129,8 +145,11 @@ class SymbolSearchDialog extends ModalDialog.ModalDialog {
                 });
                 recentBox.add_child(btn);
             }
-            content.add_child(recentBox);
+            this._suggestionsBox.add_child(recentBox);
         }
+
+        content.add_child(this._suggestionsBox);
+
         this.addButton({
             label: 'Cancel',
             action: () => this.close(),
@@ -147,8 +166,13 @@ class SymbolSearchDialog extends ModalDialog.ModalDialog {
         const query = this._entry.get_text().trim();
         if (query.length < 1) {
             this._resultsBox.destroy_all_children();
+            this._resultsScroll.hide();
+            this._suggestionsBox.show();
             return;
         }
+
+        this._suggestionsBox.hide();
+        this._resultsScroll.show();
 
         this._searchDebounceId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 300, () => {
             this._doSearch(query);
@@ -158,8 +182,6 @@ class SymbolSearchDialog extends ModalDialog.ModalDialog {
     }
 
     async _doSearch(query) {
-        // Stale-response guard: a slower earlier search must not overwrite a
-        // newer one's results.
         const serial = ++this._searchSerial;
 
         if (this._searchCancellable) this._searchCancellable.cancel();
@@ -198,14 +220,13 @@ class SymbolSearchDialog extends ModalDialog.ModalDialog {
             });
             this._resultsBox.add_child(emptyLabel);
 
-            // Providers do not know every listing. Let the user add the ticker
-            // anyway rather than dead-ending the search.
             const ticker = query.toUpperCase();
             const manualBtn = new St.Button({
                 label: `Add "${ticker}" anyway`,
                 style_class: 'button market-pulse-search-result-row',
                 accessible_name: `Add ${ticker} without a search match`,
-                x_expand: true
+                x_expand: true,
+                can_focus: true
             });
             manualBtn.connect('clicked', () => {
                 this._addSymbol(new SymbolData({ symbol: ticker, name: ticker }));
@@ -220,7 +241,7 @@ class SymbolSearchDialog extends ModalDialog.ModalDialog {
         }
 
         for (const item of results.slice(0, 10)) {
-            const rowBtn = new St.Button({ style_class: 'button market-pulse-search-result-row' });
+            const rowBtn = new St.Button({ style_class: 'button market-pulse-search-result-row', can_focus: true });
             const rowBox = new St.BoxLayout({ orientation: Clutter.Orientation.HORIZONTAL, style_class: 'market-pulse-search-result-box' });
 
             const nameLabel = new St.Label({
@@ -264,8 +285,6 @@ class SymbolSearchDialog extends ModalDialog.ModalDialog {
     }
 
     destroy() {
-        // ModalDialog's 'closed' handler and an explicit close() both land
-        // here; without this guard the second pass hits a disposed object.
         if (this._destroyed) return;
         this._destroyed = true;
 

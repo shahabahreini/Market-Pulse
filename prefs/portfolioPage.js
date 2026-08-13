@@ -35,7 +35,7 @@ class PortfolioPage extends Adw.PreferencesPage {
     _init(settingsHelper) {
         super._init({
             title: 'Portfolios',
-            icon_name: 'folder-saved-symbolic'
+            icon_name: 'view-list-bullet-symbolic'
         });
 
         this._settingsHelper = settingsHelper;

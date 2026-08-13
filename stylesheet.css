@@ -1,6 +1,9 @@
 /* Market Pulse — extension stylesheet
  * SPDX-License-Identifier: GPL-3.0-or-later
+ * Zen & Modern aesthetic with organic tones, tactile borders, and reactive button effects
  */
+
+/* --- Panel Ticker --- */
 
 .market-pulse-panel-icon {
     margin-right: 6px;
@@ -9,248 +12,174 @@
 .market-pulse-panel-label {
     font-weight: 600;
     font-size: 13px;
+    letter-spacing: 0.1px;
 }
 
+.market-pulse-ticker-box {
+    spacing: 5px;
+    max-width: 260px;
+    transition-duration: 200ms;
+}
+
+.market-pulse-pin-icon {
+    icon-size: 11px;
+    margin-left: 4px;
+    opacity: 0.65;
+}
+
+/* --- Menu Chrome & Header --- */
+
 .market-pulse-menu-header {
-    padding: 8px 12px;
+    padding: 10px 14px 8px 14px;
     spacing: 8px;
 }
 
 .market-pulse-menu-title {
-    font-weight: bold;
+    font-weight: 600;
     font-size: 15px;
+    letter-spacing: 0.2px;
 }
 
 .market-pulse-icon-btn {
-    padding: 4px 8px;
-    border-radius: 6px;
+    padding: 5px 9px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background-color: transparent;
+    transition-duration: 180ms;
+}
+
+.market-pulse-icon-btn:hover {
+    background-color: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.20);
+}
+
+.market-pulse-icon-btn:active {
+    background-color: rgba(255, 255, 255, 0.22);
+    border-color: rgba(255, 255, 255, 0.30);
 }
 
 .market-pulse-icon-btn.selected {
-    background-color: rgba(255, 255, 255, 0.16);
+    background-color: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.26);
 }
 
+/* --- Summary Banner --- */
+
 .market-pulse-summary-banner {
-    padding: 8px 14px;
+    padding: 10px 16px;
     background-color: rgba(255, 255, 255, 0.05);
-    border-radius: 8px;
-    margin: 4px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 12px;
+    margin: 4px 12px 6px 12px;
+    spacing: 3px;
 }
 
 .market-pulse-summary-val {
-    font-weight: bold;
+    font-weight: 600;
     font-size: 14px;
+    letter-spacing: 0.1px;
 }
 
 .market-pulse-summary-gain {
     font-size: 12px;
-    opacity: 0.85;
+    opacity: 0.8;
 }
+
+/* --- Portfolio Selector Chips --- */
+
+.market-pulse-portfolio-box {
+    padding: 4px 12px 6px 12px;
+    spacing: 6px;
+}
+
+.market-pulse-popular-chip {
+    padding: 4px 11px;
+    font-size: 11px;
+    font-weight: 500;
+    border-radius: 14px;
+    margin-right: 4px;
+    background-color: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition-duration: 180ms;
+}
+
+.market-pulse-popular-chip:hover {
+    background-color: rgba(255, 255, 255, 0.13);
+    border-color: rgba(255, 255, 255, 0.18);
+}
+
+.market-pulse-popular-chip:active {
+    background-color: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+.market-pulse-popular-chip.selected {
+    background-color: rgba(255, 255, 255, 0.20);
+    border-color: rgba(255, 255, 255, 0.26);
+    font-weight: 600;
+}
+
+/* --- Symbol List & Rows --- */
 
 .market-pulse-symbol-scroll {
     max-height: 300px;
 }
 
+.market-pulse-symbol-list {
+    spacing: 3px;
+    padding: 2px 0;
+}
+
 .market-pulse-symbol-row {
-    padding: 6px 12px;
-    border-radius: 6px;
-    margin: 2px 4px;
+    padding: 7px 12px;
+    border-radius: 10px;
+    margin: 1px 6px;
+    background-color: transparent;
+    border: 1px solid transparent;
+    transition-duration: 180ms;
+}
+
+.market-pulse-symbol-row:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.10);
+}
+
+.market-pulse-symbol-row:active {
+    background-color: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.18);
 }
 
 .market-pulse-row-box {
-    spacing: 8px;
+    spacing: 10px;
+}
+
+.market-pulse-name-box {
+    spacing: 2px;
 }
 
 .market-pulse-row-sym {
-    font-weight: bold;
+    font-weight: 600;
     font-size: 13px;
+    letter-spacing: 0.2px;
 }
 
 .market-pulse-row-desc {
     font-size: 11px;
-    opacity: 0.7;
-}
-
-.market-pulse-pct-chip {
-    padding: 2px 6px;
-    border-radius: 10px;
-    font-size: 11px;
-    font-weight: bold;
-}
-
-.chip-green {
-    background-color: rgba(34, 197, 94, 0.15);
-    color: #4ade80;
-}
-
-.chip-red {
-    background-color: rgba(239, 68, 68, 0.15);
-    color: #f87171;
-}
-
-.chip-blue {
-    background-color: rgba(59, 130, 246, 0.15);
-    color: #60a5fa;
-}
-
-.chip-orange {
-    background-color: rgba(249, 115, 22, 0.15);
-    color: #fb923c;
-}
-
-.market-pulse-detail-view {
-    padding: 12px;
-    spacing: 10px;
-    background-color: rgba(0, 0, 0, 0.2);
-    border-radius: 8px;
-    margin: 6px 12px;
-}
-
-.market-pulse-detail-title {
-    font-weight: bold;
-    font-size: 14px;
-}
-
-.market-pulse-status-badge {
-    font-size: 10px;
-    padding: 2px 6px;
-    border-radius: 4px;
-    background-color: rgba(255, 255, 255, 0.1);
-}
-
-.market-pulse-tf-box {
-    spacing: 4px;
-    margin-top: 4px;
-}
-
-.market-pulse-tf-btn {
-    padding: 2px 8px;
-    font-size: 11px;
-    border-radius: 4px;
-}
-
-.market-pulse-stats-grid {
-    spacing: 4px;
-    margin-top: 6px;
-}
-
-.market-pulse-stat-cell {
-    font-size: 11px;
-    opacity: 0.85;
-}
-
-.market-pulse-search-dialog {
-    border-radius: 12px;
-}
-
-.market-pulse-dialog-title {
-    font-weight: bold;
-    font-size: 16px;
-    margin-bottom: 8px;
-}
-
-.market-pulse-search-entry {
-    margin-bottom: 12px;
-}
-
-.market-pulse-search-result-row {
-    padding: 8px;
-    border-radius: 6px;
-    margin-bottom: 4px;
-}
-
-.market-pulse-asset-badge {
-    font-size: 10px;
-    font-weight: bold;
-    padding: 2px 6px;
-    border-radius: 4px;
-}
-
-.market-pulse-badge-equity { background-color: rgba(59, 130, 246, 0.2); color: #93c5fd; }
-.market-pulse-badge-etf { background-color: rgba(168, 85, 247, 0.2); color: #c084fc; }
-.market-pulse-badge-crypto { background-color: rgba(234, 179, 8, 0.2); color: #fde047; }
-.market-pulse-badge-forex { background-color: rgba(20, 184, 166, 0.2); color: #5eead4; }
-
-.market-pulse-popular-chip {
-    padding: 4px 8px;
-    font-size: 11px;
-    border-radius: 12px;
-    margin-right: 6px;
-}
-
-.market-pulse-popular-chip.selected {
-    background-color: rgba(255, 255, 255, 0.16);
-    font-weight: bold;
-}
-
-.market-pulse-portfolio-box {
-    padding: 2px 12px 6px 12px;
-    spacing: 4px;
-}
-
-/* --- Panel ticker --- */
-
-.market-pulse-ticker-box {
-    spacing: 4px;
-    max-width: 260px;
-}
-
-/* --- Menu chrome --- */
-
-.market-pulse-menu-footer {
-    padding: 6px 12px;
-    spacing: 8px;
-}
-
-.market-pulse-freshness-label {
-    font-size: 11px;
-    opacity: 0.6;
-}
-
-.market-pulse-settings-link-btn {
-    padding: 4px 10px;
-    font-size: 12px;
-    border-radius: 6px;
-}
-
-.market-pulse-symbol-list {
-    spacing: 2px;
-    padding: 2px 0;
-}
-
-.market-pulse-empty-list-label {
-    padding: 24px 16px;
-    font-size: 12px;
-    opacity: 0.7;
-    text-align: center;
-}
-
-.market-pulse-offline-banner {
-    margin: 4px 12px;
-    padding: 5px 10px;
-    font-size: 11px;
-    border-radius: 6px;
-    background-color: rgba(249, 115, 22, 0.12);
-    color: #fb923c;
-}
-
-/* --- Symbol rows --- */
-
-.market-pulse-name-box {
-    spacing: 1px;
+    opacity: 0.65;
 }
 
 .market-pulse-price-box {
-    spacing: 2px;
+    spacing: 3px;
 }
 
 .market-pulse-row-price {
     font-size: 13px;
     font-weight: 600;
+    letter-spacing: 0.1px;
 }
 
 .market-pulse-row-loading .market-pulse-row-price {
-    opacity: 0.4;
+    opacity: 0.35;
 }
 
 .market-pulse-row-stale {
@@ -260,14 +189,49 @@
 .market-pulse-row-error-badge {
     icon-size: 12px;
     margin-left: 5px;
-    color: #fb923c;
+    color: #e09f58;
 }
 
 .market-pulse-sparkline {
-    margin: 0 8px;
+    margin: 0 6px;
 }
 
-/* --- Per-row management actions --- */
+/* --- Zen Percentage Chips --- */
+
+.market-pulse-pct-chip {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1px;
+    text-align: center;
+}
+
+.chip-green {
+    background-color: rgba(94, 184, 138, 0.16);
+    color: #60b08e;
+    border: 1px solid rgba(94, 184, 138, 0.28);
+}
+
+.chip-red {
+    background-color: rgba(224, 122, 122, 0.16);
+    color: #e57373;
+    border: 1px solid rgba(224, 122, 122, 0.28);
+}
+
+.chip-blue {
+    background-color: rgba(100, 168, 216, 0.16);
+    color: #64a8d8;
+    border: 1px solid rgba(100, 168, 216, 0.28);
+}
+
+.chip-orange {
+    background-color: rgba(224, 159, 88, 0.16);
+    color: #e09f58;
+    border: 1px solid rgba(224, 159, 88, 0.28);
+}
+
+/* --- Per-Row Management Actions --- */
 
 .market-pulse-row-container {
     spacing: 2px;
@@ -276,64 +240,212 @@
 .market-pulse-row-more-btn {
     margin-right: 4px;
     opacity: 0.55;
+    border-radius: 7px;
+    border: 1px solid transparent;
+    transition-duration: 180ms;
 }
 
 .market-pulse-row-more-btn:hover {
     opacity: 1;
+    background-color: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.20);
+}
+
+.market-pulse-row-more-btn:active {
+    background-color: rgba(255, 255, 255, 0.22);
+    border-color: rgba(255, 255, 255, 0.30);
 }
 
 .market-pulse-row-actions {
-    spacing: 4px;
-    padding: 4px 8px 6px 12px;
+    spacing: 6px;
+    padding: 4px 10px 8px 14px;
 }
 
 .market-pulse-action-disabled {
-    opacity: 0.3;
+    opacity: 0.25;
 }
 
 .market-pulse-action-idle {
     opacity: 0.75;
+    border-radius: 7px;
+    border: 1px solid transparent;
+    transition-duration: 180ms;
 }
 
-/* --- Detail view --- */
+.market-pulse-action-idle:hover {
+    opacity: 1;
+    background-color: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.20);
+}
+
+.market-pulse-action-idle:active {
+    background-color: rgba(255, 255, 255, 0.22);
+    border-color: rgba(255, 255, 255, 0.30);
+}
+
+/* --- Detail View Card --- */
+
+.market-pulse-detail-view {
+    padding: 14px;
+    spacing: 10px;
+    background-color: rgba(0, 0, 0, 0.22);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 14px;
+    margin: 6px 12px;
+}
 
 .market-pulse-detail-header {
-    spacing: 6px;
+    spacing: 8px;
+}
+
+.market-pulse-detail-title {
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: 0.1px;
+}
+
+.market-pulse-status-badge {
+    font-size: 10px;
+    font-weight: 500;
+    padding: 2px 7px;
+    border-radius: 6px;
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    color: rgba(255, 255, 255, 0.85);
 }
 
 .market-pulse-detail-notice {
     font-size: 11px;
-    padding: 4px 8px;
-    border-radius: 4px;
-    background-color: rgba(255, 255, 255, 0.06);
-    opacity: 0.85;
+    padding: 5px 10px;
+    border-radius: 6px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    opacity: 0.8;
 }
 
 .market-pulse-chart-canvas {
-    margin: 4px 0;
+    margin: 6px 0;
 }
 
-.market-pulse-stats-row {
-    spacing: 10px;
+/* --- Segmented Timeframe Switcher --- */
+
+.market-pulse-tf-box {
+    spacing: 3px;
+    margin-top: 4px;
+    padding: 3px;
+    background-color: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 9px;
 }
 
-.market-pulse-tf-btn:hover,
+.market-pulse-tf-btn {
+    padding: 3px 9px;
+    font-size: 11px;
+    font-weight: 500;
+    border-radius: 6px;
+    background-color: transparent;
+    border: 1px solid transparent;
+    transition-duration: 180ms;
+}
+
+.market-pulse-tf-btn:hover {
+    background-color: rgba(255, 255, 255, 0.09);
+    border-color: rgba(255, 255, 255, 0.11);
+}
+
+.market-pulse-tf-btn:active {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
 .market-pulse-tf-btn.selected {
-    background-color: rgba(255, 255, 255, 0.12);
+    background-color: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.22);
+    font-weight: 600;
 }
 
 .market-pulse-compare-btn {
-    margin-left: 8px;
+    margin-left: 6px;
 }
 
-/* --- Search dialog --- */
+.market-pulse-stats-grid {
+    spacing: 4px;
+    margin-top: 6px;
+}
+
+.market-pulse-stats-row {
+    spacing: 12px;
+}
+
+.market-pulse-stat-cell {
+    font-size: 11px;
+    opacity: 0.8;
+}
+
+/* --- Search & Modal Dialogs --- */
+
+.market-pulse-search-dialog {
+    border-radius: 16px;
+}
+
+.market-pulse-dialog-title {
+    font-weight: 600;
+    font-size: 16px;
+    letter-spacing: 0.2px;
+    margin-bottom: 12px;
+}
+
+.market-pulse-search-entry {
+    margin-bottom: 12px;
+    border-radius: 10px;
+    padding: 8px 12px;
+    background-color: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    transition-duration: 180ms;
+}
+
+.market-pulse-search-entry:focus {
+    border-color: rgba(255, 255, 255, 0.28);
+    background-color: rgba(255, 255, 255, 0.11);
+}
+
+.market-pulse-suggestions-box {
+    spacing: 6px;
+}
+
+.market-pulse-section-header {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    opacity: 0.55;
+    margin-top: 8px;
+    margin-bottom: 4px;
+}
 
 .market-pulse-search-results-scroll {
     margin-bottom: 8px;
 }
 
 .market-pulse-search-results-box {
-    spacing: 2px;
+    spacing: 4px;
+}
+
+.market-pulse-search-result-row {
+    padding: 9px 12px;
+    border-radius: 8px;
+    margin-bottom: 2px;
+    background-color: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    transition-duration: 180ms;
+}
+
+.market-pulse-search-result-row:hover {
+    background-color: rgba(255, 255, 255, 0.10);
+    border-color: rgba(255, 255, 255, 0.14);
+}
+
+.market-pulse-search-result-row:active {
+    background-color: rgba(255, 255, 255, 0.16);
+    border-color: rgba(255, 255, 255, 0.22);
 }
 
 .market-pulse-search-result-box {
@@ -342,19 +454,21 @@
 
 .market-pulse-search-result-name {
     font-size: 12px;
+    font-weight: 500;
 }
 
 .market-pulse-loading-label,
 .market-pulse-empty-search-label {
-    padding: 16px 8px;
+    padding: 20px 8px;
     font-size: 12px;
-    opacity: 0.7;
+    opacity: 0.65;
+    text-align: center;
 }
 
 .market-pulse-popular-box,
 .market-pulse-recent-box {
-    spacing: 4px;
-    margin-top: 6px;
+    spacing: 6px;
+    margin-bottom: 4px;
 }
 
 .market-pulse-recent-label {
@@ -363,78 +477,230 @@
     margin-right: 4px;
 }
 
-.market-pulse-badge-index { background-color: rgba(148, 163, 184, 0.2); color: #cbd5e1; }
-.market-pulse-badge-future { background-color: rgba(236, 72, 153, 0.2); color: #f9a8d4; }
-.market-pulse-badge-mutualfund { background-color: rgba(132, 204, 22, 0.2); color: #bef264; }
+/* --- Muted Harmonic Asset Badges --- */
 
-/* --- Onboarding --- */
+.market-pulse-asset-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 6px;
+    letter-spacing: 0.2px;
+}
+
+.market-pulse-badge-equity {
+    background-color: rgba(100, 168, 216, 0.18);
+    color: #8ec2e8;
+    border: 1px solid rgba(100, 168, 216, 0.26);
+}
+
+.market-pulse-badge-etf {
+    background-color: rgba(168, 140, 220, 0.18);
+    color: #c4b0ea;
+    border: 1px solid rgba(168, 140, 220, 0.26);
+}
+
+.market-pulse-badge-crypto {
+    background-color: rgba(224, 175, 80, 0.18);
+    color: #e8c46c;
+    border: 1px solid rgba(224, 175, 80, 0.26);
+}
+
+.market-pulse-badge-forex {
+    background-color: rgba(80, 180, 160, 0.18);
+    color: #72cfb8;
+    border: 1px solid rgba(80, 180, 160, 0.26);
+}
+
+.market-pulse-badge-index {
+    background-color: rgba(148, 163, 184, 0.18);
+    color: #cbd5e1;
+    border: 1px solid rgba(148, 163, 184, 0.26);
+}
+
+.market-pulse-badge-future {
+    background-color: rgba(216, 120, 160, 0.18);
+    color: #e492b9;
+    border: 1px solid rgba(216, 120, 160, 0.26);
+}
+
+.market-pulse-badge-mutualfund {
+    background-color: rgba(140, 195, 90, 0.18);
+    color: #a8db74;
+    border: 1px solid rgba(140, 195, 90, 0.26);
+}
+
+/* --- Onboarding & Dialogs --- */
 
 .market-pulse-onboarding-dialog {
-    border-radius: 12px;
+    border-radius: 16px;
 }
 
 .market-pulse-onboarding-body {
     font-size: 12px;
-    opacity: 0.85;
-    margin-bottom: 10px;
+    opacity: 0.8;
+    line-height: 1.4;
+    margin-bottom: 12px;
 }
 
 .market-pulse-onboarding-list {
-    spacing: 3px;
-    margin-bottom: 10px;
+    spacing: 6px;
+    margin-bottom: 12px;
 }
 
 .market-pulse-onboarding-item {
     font-size: 12px;
-    opacity: 0.9;
+    opacity: 0.85;
 }
 
 .market-pulse-preset-row {
-    padding: 8px 12px;
-    border-radius: 8px;
-    margin-bottom: 4px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background-color: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    margin-bottom: 5px;
+    transition-duration: 180ms;
+}
+
+.market-pulse-preset-row:hover {
+    background-color: rgba(255, 255, 255, 0.09);
+    border-color: rgba(255, 255, 255, 0.16);
+}
+
+.market-pulse-preset-row:active {
+    background-color: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.22);
 }
 
 .market-pulse-preset-box {
-    spacing: 2px;
+    spacing: 3px;
 }
 
 .market-pulse-preset-title {
     font-size: 13px;
-    font-weight: bold;
+    font-weight: 600;
+    letter-spacing: 0.1px;
 }
 
 .market-pulse-preset-desc {
     font-size: 11px;
-    opacity: 0.7;
+    opacity: 0.65;
 }
 
-/* --- Desktop widget --- */
+/* --- Menu Footer & Offline State --- */
+
+.market-pulse-menu-footer {
+    padding: 8px 14px;
+    spacing: 8px;
+}
+
+.market-pulse-freshness-label {
+    font-size: 11px;
+    opacity: 0.55;
+}
+
+.market-pulse-settings-link-btn {
+    padding: 4px 12px;
+    font-size: 12px;
+    border-radius: 8px;
+    background-color: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    transition-duration: 180ms;
+}
+
+.market-pulse-settings-link-btn:hover {
+    background-color: rgba(255, 255, 255, 0.13);
+    border-color: rgba(255, 255, 255, 0.18);
+}
+
+.market-pulse-settings-link-btn:active {
+    background-color: rgba(255, 255, 255, 0.20);
+    border-color: rgba(255, 255, 255, 0.26);
+}
+
+.market-pulse-empty-list-label {
+    padding: 28px 16px;
+    font-size: 12px;
+    opacity: 0.65;
+    text-align: center;
+}
+
+.market-pulse-offline-banner {
+    margin: 4px 12px;
+    padding: 6px 12px;
+    font-size: 11px;
+    border-radius: 8px;
+    background-color: rgba(224, 159, 88, 0.14);
+    color: #e09f58;
+    border: 1px solid rgba(224, 159, 88, 0.22);
+}
+
+/* --- Floating Desktop Widget --- */
 
 .market-pulse-widget-window {
-    padding: 12px;
-    spacing: 8px;
-    border-radius: 12px;
-    background-color: rgba(0, 0, 0, 0.75);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 14px;
+    spacing: 10px;
+    border-radius: 16px;
+    background-color: rgba(22, 26, 30, 0.90);
+    border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .market-pulse-widget-header {
-    spacing: 6px;
+    spacing: 8px;
 }
 
 .market-pulse-widget-title {
-    font-weight: bold;
+    font-weight: 600;
     font-size: 13px;
+    letter-spacing: 0.1px;
 }
 
 .market-pulse-widget-price {
     font-size: 18px;
     font-weight: 600;
+    letter-spacing: 0.2px;
 }
 
-.market-pulse-pin-icon {
-    icon-size: 12px;
-    margin-left: 4px;
-    opacity: 0.7;
+/* --- Keyboard focus & disabled states ---
+ *
+ * St has no :focus-visible, so these rings also show for pointer focus. They are
+ * accent-tinted rather than a brighter hover fill so focus stays readable while
+ * hovered. St ignores `outline`, hence border-color plus a spread box-shadow.
+ */
+
+.market-pulse-icon-btn:focus,
+.market-pulse-popular-chip:focus,
+.market-pulse-symbol-row:focus,
+.market-pulse-row-more-btn:focus,
+.market-pulse-action-idle:focus,
+.market-pulse-tf-btn:focus,
+.market-pulse-search-result-row:focus,
+.market-pulse-preset-row:focus,
+.market-pulse-settings-link-btn:focus {
+    border-color: rgba(120, 176, 255, 0.75);
+    box-shadow: 0 0 0 2px rgba(120, 176, 255, 0.25);
+    background-color: rgba(255, 255, 255, 0.13);
+}
+
+/* St still delivers hover to an insensitive actor, so the :hover pairs below
+ * keep a disabled control from lighting up under the pointer. */
+.market-pulse-icon-btn:insensitive,
+.market-pulse-popular-chip:insensitive,
+.market-pulse-row-more-btn:insensitive,
+.market-pulse-action-idle:insensitive,
+.market-pulse-tf-btn:insensitive,
+.market-pulse-search-result-row:insensitive,
+.market-pulse-preset-row:insensitive,
+.market-pulse-settings-link-btn:insensitive,
+.market-pulse-icon-btn:insensitive:hover,
+.market-pulse-popular-chip:insensitive:hover,
+.market-pulse-row-more-btn:insensitive:hover,
+.market-pulse-action-idle:insensitive:hover,
+.market-pulse-tf-btn:insensitive:hover,
+.market-pulse-search-result-row:insensitive:hover,
+.market-pulse-preset-row:insensitive:hover,
+.market-pulse-settings-link-btn:insensitive:hover {
+    opacity: 0.4;
+    background-color: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.06);
+    box-shadow: none;
 }

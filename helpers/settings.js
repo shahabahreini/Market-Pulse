@@ -252,11 +252,29 @@ export class SettingsHelper {
     // --- General Properties ---
 
     /**
+     * True if the compiled schema defines `key`.
+     *
+     * GLib treats an unknown key as a programmer error and aborts the process,
+     * so try/catch cannot cover it. The schema that aborts is the installed one,
+     * which goes stale when a new key lands in source before `make install`.
+     */
+    hasKey(key) {
+        if (!this._schemaKeys) {
+            this._schemaKeys = new Set(this._settings.settings_schema.list_keys());
+        }
+        return this._schemaKeys.has(key);
+    }
+
+    /**
      * Reads any key as a plain JS value.
      * Note: GLib.Variant exposes recursiveUnpack() (camelCase) in GJS —
      * there is no snake_case alias.
      */
     get(key) {
+        if (!this.hasKey(key)) {
+            console.warn(`[market-pulse] Setting '${key}' missing from installed schema — run 'make install'.`);
+            return null;
+        }
         try {
             return this._settings.get_value(key).recursiveUnpack();
         } catch (e) {
@@ -266,18 +284,32 @@ export class SettingsHelper {
     }
 
     setBoolean(key, value) {
+        if (!this._guardWrite(key)) return;
         this._settings.set_boolean(key, !!value);
     }
 
     setString(key, value) {
+        if (!this._guardWrite(key)) return;
         this._settings.set_string(key, value ?? '');
     }
 
     setInt(key, value) {
+        if (!this._guardWrite(key)) return;
         this._settings.set_int(key, Math.round(Number(value) || 0));
     }
 
+    _guardWrite(key) {
+        if (this.hasKey(key)) return true;
+        console.warn(`[market-pulse] Dropped write to unknown setting '${key}' — run 'make install'.`);
+        return false;
+    }
+
     connect(key, callback) {
+        // `changed::<key>` is a detailed signal; an undefined detail aborts too.
+        if (!this.hasKey(key)) {
+            console.warn(`[market-pulse] Skipping watch on unknown setting '${key}' — run 'make install'.`);
+            return null;
+        }
         const signalId = this._settings.connect(`changed::${key}`, callback);
         this._signalIds.push(signalId);
         return signalId;
