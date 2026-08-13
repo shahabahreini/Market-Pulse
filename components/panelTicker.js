@@ -1,6 +1,5 @@
-/**
- * Market Pulse — Panel Ticker Component (Top Bar Indicator)
- * GPL-3.0 License
+/* Market Pulse — panel indicator
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 import St from 'gi://St';
@@ -39,9 +38,15 @@ class PanelTicker extends PanelMenu.Button {
         });
         this._box.add_child(this._label);
 
+        this._pinIcon = new St.Icon({
+            icon_name: 'view-pin-symbolic',
+            style_class: 'system-status-icon market-pulse-pin-icon'
+        });
+        this._pinIcon.hide();
+        this._box.add_child(this._pinIcon);
+
         this.add_child(this._box);
 
-        // Hover & Mouse Click Bindings
         this.connect('enter-event', () => {
             if (this._settingsHelper.get('ticker-pause-on-hover')) {
                 this._isHovered = true;
@@ -119,6 +124,7 @@ class PanelTicker extends PanelMenu.Button {
         const symbols = portfolio.symbols;
         if (symbols.length === 0) {
             this._label.set_text('Market Pulse');
+            this._pinIcon.hide();
             return;
         }
 
@@ -134,7 +140,7 @@ class PanelTicker extends PanelMenu.Button {
 
         if (!targetSymObj) return;
         const quote = this._quotesMap[targetSymObj.symbol];
-        // Per-symbol override wins over the global format (plan §B4).
+        // Per-symbol override wins over the global format.
         const displayMode = this._settingsHelper.getDisplayModeForSymbol(targetSymObj.symbol);
         const isMasked = this._settingsHelper.get('hide-private-values');
 
@@ -155,11 +161,9 @@ class PanelTicker extends PanelMenu.Button {
             else text += `${priceStr} (${pctStr})`;
         }
 
-        if (pinned === targetSymObj.symbol) {
-            text = `📌 ${text}`;
-        }
-
         this._label.set_text(text);
+        if (pinned === targetSymObj.symbol) this._pinIcon.show();
+        else this._pinIcon.hide();
     }
 
     destroy() {

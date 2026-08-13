@@ -1,6 +1,5 @@
-/**
- * Market Pulse — Preferences Window (GNOME 46+ Libadwaita)
- * GPL-3.0 License
+/* Market Pulse — preferences window
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 import { ExtensionPreferences } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
@@ -19,7 +18,7 @@ export default class MarketPulsePreferences extends ExtensionPreferences {
         window.add(new PortfolioPage(settingsHelper));
         window.add(new ProvidersPage(settingsHelper));
         window.add(new AlertsPage(settingsHelper));
-        window.add(new AboutPage(this));
+        window.add(new AboutPage(this.metadata['version-name'] ?? String(this.metadata.version)));
 
         // Flush pending writes and disconnect handlers when the window closes.
         window.connect('close-request', () => {

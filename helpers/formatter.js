@@ -1,6 +1,5 @@
-/**
- * Market Pulse — Formatter Helper
- * GPL-3.0 License
+/* Market Pulse — value formatting
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 let _fxService = null;
@@ -8,7 +7,7 @@ let _getDisplayCurrency = null;
 
 export class Formatter {
     /**
-     * Wires optional currency conversion (plan §C4). Called from enable() with
+     * Wires optional currency conversion. Called from enable() with
      * the FxService and a getter for the display-currency preference, and with
      * (null, null) on disable so nothing survives the extension.
      */

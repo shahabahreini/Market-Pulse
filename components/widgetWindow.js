@@ -1,11 +1,5 @@
-/**
- * Market Pulse — Detached Desktop Widget (plan §C12)
- *
- * An always-on-top chart panel laid out in the Shell's chrome rather than a
- * real window: it needs no Gtk, survives workspace switches, and is torn down
- * completely on disable().
- *
- * GPL-3.0 License
+/* Market Pulse — detached desktop widget
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 import St from 'gi://St';
@@ -36,8 +30,6 @@ class WidgetWindow extends St.BoxLayout {
         this._symbol = null;
         this._quote = null;
         this._dragStart = null;
-
-        // Header with title and close affordance
         const header = new St.BoxLayout({
             orientation: Clutter.Orientation.HORIZONTAL,
             style_class: 'market-pulse-widget-header'

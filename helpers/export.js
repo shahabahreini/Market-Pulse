@@ -1,12 +1,5 @@
-/**
- * Market Pulse — Import / Export Helper
- *
- * Pure string building only — NO gi imports. This module is reachable from
- * extension.js, and pulling Gtk/Gdk into the gnome-shell process is an
- * automatic extensions.gnome.org rejection. Clipboard access lives in the
- * process-specific shims: helpers/clipboardShell.js and helpers/clipboardPrefs.js.
- *
- * GPL-3.0 License
+/* Market Pulse — portfolio import/export formats
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 export class ExportHelper {
@@ -53,7 +46,7 @@ export class ExportHelper {
 
     /**
      * Parses an exported portfolio JSON back into a plain object, rejecting
-     * anything that does not match the expected DTO shape (plan §0.4).
+     * anything that does not match the expected DTO shape.
      */
     static parsePortfolioJson(text) {
         const data = JSON.parse(text);

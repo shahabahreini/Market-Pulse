@@ -1,7 +1,5 @@
-/**
- * Market Pulse — Clipboard shim for the preferences (GTK) process.
- * Only imported from prefs.js and prefs/*.js — never from extension.js.
- * GPL-3.0 License
+/* Market Pulse — clipboard access (prefs process)
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 import Gdk from 'gi://Gdk';

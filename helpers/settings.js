@@ -1,6 +1,5 @@
-/**
- * Market Pulse — Settings Helper
- * GPL-3.0 License
+/* Market Pulse — GSettings access
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 import GLib from 'gi://GLib';
@@ -8,7 +7,6 @@ import { Portfolio, SymbolData, AlertRule } from './models.js';
 
 export class SettingsHelper {
     constructor(extension) {
-        this._extension = extension;
         this._settings = extension.getSettings();
         this._signalIds = [];
         this._saveDebounceId = null;
@@ -92,7 +90,7 @@ export class SettingsHelper {
         if (!portfolios[activeId]) {
             portfolios[activeId] = new Portfolio({ id: activeId, name: 'Main Portfolio' });
         }
-        
+
         const exists = portfolios[activeId].symbols.some(s => s.symbol === symbolObj.symbol);
         if (!exists) {
             portfolios[activeId].symbols.push(symbolObj);
@@ -110,7 +108,7 @@ export class SettingsHelper {
         }
     }
 
-    // --- Per-Symbol Ticker Display Overrides (plan §B4) ---
+    // --- Per-Symbol Ticker Display Overrides ---
 
     getSymbolDisplayOverrides() {
         try {
@@ -133,7 +131,7 @@ export class SettingsHelper {
         this._settings.set_string('symbol-display-overrides', JSON.stringify(overrides));
     }
 
-    // --- Recent Searches (plan §B5) ---
+    // --- Recent Searches ---
 
     getRecentSearches() {
         return this._settings.get_strv('recent-searches');
@@ -204,15 +202,6 @@ export class SettingsHelper {
 
     setInt(key, value) {
         this._settings.set_int(key, Math.round(Number(value) || 0));
-    }
-
-    setEnum(key, nick) {
-        this._settings.set_string(key, nick);
-    }
-
-    /** Escape hatch for callers that already hold a GLib.Variant. */
-    setValue(key, gvariant) {
-        this._settings.set_value(key, gvariant);
     }
 
     connect(key, callback) {

@@ -86,6 +86,22 @@ Market Pulse ships with built-in adapters for Yahoo Finance, Eastmoney (China ma
 
 ---
 
+## Architecture
+
+| Path | Responsibility |
+| ---- | -------------- |
+| `extension.js` | `enable()`/`disable()` wiring only. Constructs services, registers the panel button, tears everything down in reverse order. |
+| `helpers/settings.js` | The only module that touches GSettings. Portfolio writes are debounced and flushed on teardown. |
+| `helpers/models.js` | `SymbolData`, `Quote`, `Holding`, `Portfolio`, `AlertRule`. Remote JSON is normalised into these before use. |
+| `services/quoteProvider.js` | `BaseQuoteProvider` (shared `Soup.Session`, HTTP helpers) and `ProviderRegistry` (per-symbol failover chain). |
+| `services/providers/*.js` | One adapter per source. Adding a provider is a single new file plus one `register()` call. |
+| `services/pollingScheduler.js` | Single timer. Chooses the interval from market hours, backs off on HTTP 429, suspends when locked, offline, or on battery. |
+| `services/quoteCache.js` | In-memory quotes plus an async JSON mirror in the cache directory for offline grace. |
+| `components/*.js` | St/Clutter UI. `chart.js` and `sparkline.js` draw with Cairo. |
+| `prefs/*.js` | Libadwaita pages. Runs in a separate process; this is the only place Gtk/Gdk may be imported. |
+
+Two process-boundary rules the code holds to: nothing reachable from `extension.js` may import Gtk or Gdk, and nothing on the shell's main loop may block on I/O. Both are checked in CI.
+
 ## Credits & Attribution
 
 Market Pulse is built as a clean-room GNOME Shell extension inspired by the feature set of `cinatic/stocks-extension`. All code has been written from scratch under the GPL-3.0 license.

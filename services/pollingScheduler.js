@@ -1,6 +1,5 @@
-/**
- * Market Pulse — Adaptive Polling Scheduler
- * GPL-3.0 License
+/* Market Pulse — quote polling scheduler
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 import GLib from 'gi://GLib';
@@ -30,17 +29,14 @@ export class PollingScheduler {
 
         this._networkMonitor = Gio.NetworkMonitor.get_default();
         this._networkSignalId = this._networkMonitor.connect('network-changed', (monitor, available) => {
-            if (available && !this._isPaused) {
-                console.log('[market-pulse] Network restored, triggering immediate refresh.');
-                this.triggerRefresh();
-            }
+            if (available && !this._isPaused) this.triggerRefresh();
         });
 
         this._watchScreenLock();
         this._watchBattery();
     }
 
-    // --- Suspension inputs (plan §A4) ---
+    // --- Suspension inputs ---
 
     _watchScreenLock() {
         const shield = Main.screenShield;

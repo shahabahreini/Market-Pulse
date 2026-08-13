@@ -1,7 +1,5 @@
-/**
- * Market Pulse — Clipboard shim for the gnome-shell process.
- * Only St is available here; Gtk/Gdk must never be imported.
- * GPL-3.0 License
+/* Market Pulse — clipboard access (shell process)
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 import St from 'gi://St';

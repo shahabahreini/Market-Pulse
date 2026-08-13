@@ -1,6 +1,5 @@
-/**
- * Market Pulse — GNOME Shell Panel Extension Entry Point
- * GPL-3.0 License
+/* Market Pulse — extension entry point
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 import Meta from 'gi://Meta';
@@ -85,12 +84,12 @@ export default class MarketPulseExtension extends Extension {
                 }
             }
 
-            // Shell overview search provider (plan §C11)
+            // Shell overview search provider
             if (this._settings.get('search-provider-enabled')) {
                 this._registerSearchProvider();
             }
 
-            // Configurable keyboard shortcut for the panel menu (plan §C11)
+            // Configurable keyboard shortcut for the panel menu
             if (this._settings.get('menu-shortcut-enabled')) {
                 this._addKeybinding();
             }
@@ -98,7 +97,7 @@ export default class MarketPulseExtension extends Extension {
             // Start Polling Loop
             this._scheduler.start();
 
-            // First-run onboarding (plan §C13) — after the UI exists.
+            // First-run onboarding — after the UI exists.
             if (!this._settings.get('first-run-complete')) {
                 this._showOnboarding();
             }
@@ -137,7 +136,7 @@ export default class MarketPulseExtension extends Extension {
         }
     }
 
-    /** Opens the detached always-on-top chart widget (plan §C12). */
+    /** Opens the detached always-on-top chart widget. */
     toggleWidget(symbolObj) {
         if (this._widget) {
             this._widget.destroy();

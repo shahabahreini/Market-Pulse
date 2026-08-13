@@ -1,13 +1,5 @@
-/**
- * Market Pulse — Main Interactive Cairo Chart Component
- *
- * Two modes:
- *   price      — a single series in its own currency, with area fill
- *   comparison — 2–3 series normalized to percent change from their first
- *                point, so instruments at different price scales are readable
- *                against each other (plan §C6)
- *
- * GPL-3.0 License
+/* Market Pulse — chart drawing area
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 import St from 'gi://St';
@@ -15,7 +7,7 @@ import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
 import { Formatter } from '../helpers/formatter.js';
 
-// Soft, low-saturation palette (plan §0.6.4). Index 0 is the primary series.
+// Soft, low-saturation palette (.4). Index 0 is the primary series.
 const SERIES_COLORS = [
     [0.20, 0.83, 0.60],
     [0.45, 0.60, 0.95],
@@ -51,11 +43,6 @@ class ChartCanvas extends St.DrawingArea {
 
         this.connect('repaint', this._onRepaint.bind(this));
         this.connect('destroy', () => this._stopAnimation());
-    }
-
-    setColorblind(isColorblind) {
-        this._isColorblind = isColorblind;
-        this.queue_repaint();
     }
 
     /** Single-series price chart. */
@@ -122,7 +109,7 @@ class ChartCanvas extends St.DrawingArea {
     }
 
     _onRepaint(area) {
-        // Lazy draw: nothing is rendered while the menu is closed (plan §0.5).
+        // Lazy draw: nothing is rendered while the menu is closed.
         if (!area.is_visible()) return;
 
         const cr = area.get_context();

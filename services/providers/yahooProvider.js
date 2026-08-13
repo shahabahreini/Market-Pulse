@@ -1,14 +1,5 @@
-/**
- * Market Pulse — Yahoo Finance Provider Adapter
- *
- * Built on the keyless endpoints only. v7/finance/quote is deliberately NOT
- * used: it is gated behind a cookie+crumb handshake and answers 429 without
- * one, which is exactly the silent-failure mode the project plan calls out as
- * an anti-pattern. v8/finance/chart carries everything the UI needs (price,
- * previous close, currency, market state, day range) plus the close series
- * used for sparklines, in a single request per symbol.
- *
- * GPL-3.0 License
+/* Market Pulse — Yahoo Finance
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 import { BaseQuoteProvider } from '../quoteProvider.js';

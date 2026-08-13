@@ -65,7 +65,19 @@ export default [
             'prefer-const': 'error',
             'no-var': 'error',
             eqeqeq: ['error', 'smart'],
-            semi: ['error', 'always']
+            semi: ['error', 'always'],
+            // GNOME Shell puts the class expression of GObject.registerClass()
+            // at column 0; keep that convention rather than fighting it.
+            indent: ['error', 4, {
+                SwitchCase: 1,
+                ignoredNodes: ['CallExpression > ClassExpression']
+            }],
+            quotes: ['error', 'single', { avoidEscape: true, allowTemplateLiterals: false }],
+            'comma-dangle': ['error', 'never'],
+            'space-before-function-paren': ['error', { anonymous: 'never', named: 'never', asyncArrow: 'always' }],
+            'keyword-spacing': 'error',
+            'no-trailing-spaces': 'error',
+            'eol-last': ['error', 'always']
         }
     }
 ];

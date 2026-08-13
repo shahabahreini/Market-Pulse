@@ -1,6 +1,5 @@
-/**
- * Market Pulse — Symbol Detail Card & Extended Stats Component
- * GPL-3.0 License
+/* Market Pulse — symbol detail card
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 import St from 'gi://St';
@@ -37,8 +36,6 @@ class DetailView extends St.BoxLayout {
         this._interval = '5m';
         this._chartSerial = 0;
         this._comparisonSymbols = [];
-
-        // --- Header ---
         this._headerBox = new St.BoxLayout({
             orientation: Clutter.Orientation.HORIZONTAL,
             style_class: 'market-pulse-detail-header'
@@ -57,7 +54,7 @@ class DetailView extends St.BoxLayout {
         });
         this._copyBtn.connect('clicked', () => this._copyQuote());
 
-        // Detach into the always-on-top desktop widget (plan §C12).
+        // Detach into the always-on-top desktop widget.
         this._popOutBtn = new St.Button({
             child: new St.Icon({ icon_name: 'view-restore-symbolic', style_class: 'popup-menu-icon' }),
             style_class: 'button market-pulse-icon-btn',
@@ -72,17 +69,11 @@ class DetailView extends St.BoxLayout {
         this._headerBox.add_child(this._popOutBtn);
         this._headerBox.add_child(this._copyBtn);
         this.add_child(this._headerBox);
-
-        // --- Error / staleness banner ---
         this._noticeLabel = new St.Label({ text: '', style_class: 'market-pulse-detail-notice' });
         this._noticeLabel.hide();
         this.add_child(this._noticeLabel);
-
-        // --- Chart ---
         this._chart = new ChartCanvas(320, 150);
         this.add_child(this._chart);
-
-        // --- Timeframe selector ---
         this._tfBox = new St.BoxLayout({
             orientation: Clutter.Orientation.HORIZONTAL,
             style_class: 'market-pulse-tf-box'
@@ -104,10 +95,10 @@ class DetailView extends St.BoxLayout {
             this._tfButtons.set(tf.range, btn);
         }
 
-        // Comparison toggle (plan §C6): overlays the other portfolio symbols
+        // Comparison toggle: overlays the other portfolio symbols
         // as normalized percent series.
         this._compareBtn = new St.Button({
-            label: '⇄ Compare',
+            label: 'Compare',
             style_class: 'button market-pulse-tf-btn market-pulse-compare-btn',
             accessible_name: 'Toggle comparison overlay'
         });
@@ -115,8 +106,6 @@ class DetailView extends St.BoxLayout {
         this._tfBox.add_child(this._compareBtn);
 
         this.add_child(this._tfBox);
-
-        // --- Key statistics grid ---
         this._statsGrid = new St.BoxLayout({
             orientation: Clutter.Orientation.VERTICAL,
             style_class: 'market-pulse-stats-grid'
@@ -169,9 +158,9 @@ class DetailView extends St.BoxLayout {
         this._titleLabel.set_text(`${symbolObj.name} (${quote.symbol})`);
         this._marketStatusBadge.set_text(mStatus.label);
 
-        // Per-symbol error and staleness states (plan §A3/§C9).
+        // Per-symbol error and staleness states.
         if (quote.error) {
-            this._showNotice(`⚠ ${quote.error} — showing last known values from ${Formatter.formatTime(quote.timestamp)}`);
+            this._showNotice(`${quote.error} — showing last known values from ${Formatter.formatTime(quote.timestamp)}`);
         } else if (quote.isStale?.()) {
             this._showNotice(`Cached quote from ${Formatter.formatTime(quote.timestamp)}`);
         } else if (quote.providerUsed && quote.providerUsed !== (symbolObj.provider || 'yahoo')) {
@@ -200,7 +189,7 @@ class DetailView extends St.BoxLayout {
             { label: 'Volume', val: Formatter.formatNumber(quote.volume) },
             { label: 'Market Cap', val: Formatter.formatNumber(quote.marketCap) },
             { label: 'P/E Ratio', val: quote.peRatio ? quote.peRatio.toFixed(2) : '—' },
-            // Dividends & earnings where the provider supplies them (plan §C7).
+            // Dividends & earnings where the provider supplies them.
             { label: 'Div Yield', val: quote.dividendYield ? `${quote.dividendYield.toFixed(2)}%` : '—' },
             { label: 'Next Earnings', val: Formatter.formatDate(quote.earningsDate) },
             { label: 'Exchange', val: quote.exchangeName || '—' }
@@ -235,7 +224,7 @@ class DetailView extends St.BoxLayout {
             this._comparisonSymbols = [];
             this._compareBtn.remove_style_class_name('selected');
         } else {
-            // Up to two peers from the active portfolio, per plan §C6 (2–3 series).
+            // Up to two peers from the active portfolio(2–3 series).
             const portfolio = this._settings?.getActivePortfolio();
             this._comparisonSymbols = (portfolio?.symbols ?? [])
                 .filter(s => s.symbol !== this._currentSymbol?.symbol)

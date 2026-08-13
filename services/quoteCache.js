@@ -1,11 +1,5 @@
-/**
- * Market Pulse — Quote Cache & Offline Persistence
- *
- * All disk access is asynchronous: the plan forbids blocking the Shell's main
- * loop on file I/O. The only exception is the final flush in destroy(), where
- * the extension is being torn down and there is no later turn to complete in.
- *
- * GPL-3.0 License
+/* Market Pulse — quote cache and offline store
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 import GLib from 'gi://GLib';

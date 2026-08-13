@@ -1,6 +1,5 @@
-/**
- * Market Pulse — Session-Bound Alert Engine
- * GPL-3.0 License
+/* Market Pulse — price alert evaluation
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
@@ -43,19 +42,19 @@ export class AlertEngine {
 
             if (rule.condition === 'ABOVE_PRICE' && quote.price >= rule.threshold) {
                 isTriggered = true;
-                title = `🚀 ${rule.symbol} Target Hit`;
+                title = `${rule.symbol} reached its target`;
                 body = `${rule.symbol} reached ${Formatter.formatCurrency(quote.price, quote.currency)} (Above target ${Formatter.formatCurrency(rule.threshold, quote.currency)})`;
             } else if (rule.condition === 'BELOW_PRICE' && quote.price <= rule.threshold) {
                 isTriggered = true;
-                title = `🔻 ${rule.symbol} Drop Alert`;
+                title = `${rule.symbol} fell below its target`;
                 body = `${rule.symbol} fell to ${Formatter.formatCurrency(quote.price, quote.currency)} (Below target ${Formatter.formatCurrency(rule.threshold, quote.currency)})`;
             } else if (rule.condition === 'GAIN_PCT' && quote.changePercent >= rule.threshold) {
                 isTriggered = true;
-                title = `📈 ${rule.symbol} Surge (+${quote.changePercent.toFixed(2)}%)`;
+                title = `${rule.symbol} is up ${quote.changePercent.toFixed(2)}% today`;
                 body = `${rule.symbol} is up ${Formatter.formatPercent(quote.changePercent)} today at ${Formatter.formatCurrency(quote.price, quote.currency)}`;
             } else if (rule.condition === 'LOSS_PCT' && quote.changePercent <= -Math.abs(rule.threshold)) {
                 isTriggered = true;
-                title = `📉 ${rule.symbol} Decline (${quote.changePercent.toFixed(2)}%)`;
+                title = `${rule.symbol} is down ${Math.abs(quote.changePercent).toFixed(2)}% today`;
                 body = `${rule.symbol} dropped ${Formatter.formatPercent(quote.changePercent)} today at ${Formatter.formatCurrency(quote.price, quote.currency)}`;
             }
 
@@ -97,7 +96,6 @@ export class AlertEngine {
                 body: body,
                 isTransient: true
             });
-            // Silent notification (no sound) as specified in rule 0.2 decision #13
             this._source.addNotification(notification);
         } catch (e) {
             console.error(`[market-pulse] Notification error: ${e.message}`);

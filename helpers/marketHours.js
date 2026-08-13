@@ -1,6 +1,5 @@
-/**
- * Market Pulse — Market Hours Helper
- * GPL-3.0 License
+/* Market Pulse — market session calendar
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 export class MarketHours {

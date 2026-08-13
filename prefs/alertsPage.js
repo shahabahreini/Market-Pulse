@@ -1,13 +1,11 @@
-/**
- * Market Pulse — Preferences Alerts Page
- * GPL-3.0 License
+/* Market Pulse — preferences: alerts
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 import Adw from 'gi://Adw';
 import Gtk from 'gi://Gtk';
 import GObject from 'gi://GObject';
 import { AlertRule } from '../helpers/models.js';
-
 
 export const AlertsPage = GObject.registerClass(
 class AlertsPage extends Adw.PreferencesPage {
@@ -81,7 +79,7 @@ class AlertsPage extends Adw.PreferencesPage {
 
         const addBtnRow = new Adw.ActionRow({ title: '' });
         const addBtn = new Gtk.Button({
-            label: '➕ Add Alert Rule',
+            label: 'Add Alert Rule',
             css_classes: ['suggested-action'],
             valign: Gtk.Align.CENTER
         });

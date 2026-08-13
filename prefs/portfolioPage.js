@@ -1,6 +1,5 @@
-/**
- * Market Pulse — Preferences Portfolio Page
- * GPL-3.0 License
+/* Market Pulse — preferences: portfolio
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 import Adw from 'gi://Adw';
@@ -11,7 +10,11 @@ import GObject from 'gi://GObject';
 import { ExportHelper } from '../helpers/export.js';
 import { copyToClipboard } from '../helpers/clipboardPrefs.js';
 
-/** Reads the quote cache the Shell process writes, so exports carry live prices. */
+// An empty key means "use the global ticker format".
+const FORMAT_KEYS = ['', 'price-and-pct', 'price', 'change-pct', 'change-abs'];
+const FORMAT_LABELS = ['Use global setting', 'Price + Change %', 'Price only', 'Change % only', 'Change only'];
+
+/** Reads the quote cache written by the shell process so exports carry live prices. */
 function loadCachedQuotes() {
     try {
         const path = GLib.build_filenamev([GLib.get_user_cache_dir(), 'market-pulse', 'quotes.json']);
@@ -112,7 +115,7 @@ class PortfolioPage extends Adw.PreferencesPage {
             const portfolio = this._settingsHelper.getActivePortfolio();
             const jsonText = ExportHelper.exportPortfolioToJson(portfolio);
             if (jsonText && copyToClipboard(jsonText)) {
-                this._flashLabel(jsonBtn, 'Copied ✓', 'Copy JSON');
+                this._flashLabel(jsonBtn, 'Copied', 'Copy JSON');
             }
         });
         exportJsonRow.add_suffix(jsonBtn);
@@ -130,7 +133,7 @@ class PortfolioPage extends Adw.PreferencesPage {
             const portfolio = this._settingsHelper.getActivePortfolio();
             const csvText = ExportHelper.exportHoldingsToCsv(portfolio, loadCachedQuotes());
             if (csvText && copyToClipboard(csvText)) {
-                this._flashLabel(csvBtn, 'Copied ✓', 'Copy CSV');
+                this._flashLabel(csvBtn, 'Copied', 'Copy CSV');
             }
         });
         exportCsvRow.add_suffix(csvBtn);
@@ -275,6 +278,21 @@ class PortfolioPage extends Adw.PreferencesPage {
             });
             expRow.add_row(priceRow);
 
+            const formatRow = new Adw.ComboRow({
+                title: 'Panel Format',
+                subtitle: 'Overrides the ticker format from the General page',
+                model: new Gtk.StringList({ strings: FORMAT_LABELS })
+            });
+            const override = this._settingsHelper.getSymbolDisplayOverrides()[symObj.symbol];
+            formatRow.set_selected(Math.max(0, FORMAT_KEYS.indexOf(override ?? '')));
+            formatRow.connect('notify::selected', () => {
+                this._settingsHelper.setSymbolDisplayOverride(
+                    symObj.symbol,
+                    FORMAT_KEYS[formatRow.get_selected()]
+                );
+            });
+            expRow.add_row(formatRow);
+
             const delBtn = new Gtk.Button({
                 icon_name: 'user-trash-symbolic',
                 valign: Gtk.Align.CENTER,
@@ -293,7 +311,7 @@ class PortfolioPage extends Adw.PreferencesPage {
         return `Holdings: ${Number(quantity) || 0} @ ${(Number(buyPrice) || 0).toFixed(2)}`;
     }
 
-    /** Adw.AlertDialog for destructive actions, per GNOME HIG (plan §0.6.1). */
+    /** Adw.AlertDialog for destructive actions, per GNOME HIG (.1). */
     _confirmRemove(symObj) {
         const dialog = new Adw.AlertDialog({
             heading: `Remove ${symObj.symbol}?`,

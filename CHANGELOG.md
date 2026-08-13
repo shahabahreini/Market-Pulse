@@ -17,6 +17,8 @@ All notable changes to the Market Pulse GNOME Shell extension will be documented
 - Portfolio JSON import alongside JSON/CSV export.
 - Per-symbol error badges, cached-quote timestamps, and an offline banner.
 
+- Icon set: a brush-drawn ring with a pulse trace, in full-colour and panel-symbolic variants.
+
 ### Notes
 - **Stooq was evaluated and dropped.** Its documented CSV endpoints answered HTTP 404 on every tested URL and host, so per the project plan's provider-validation rule it does not ship.
 - **Yahoo quotes use `v8/finance/chart`, not `v7/finance/quote`.** The v7 endpoint is gated behind a cookie/crumb handshake and answers HTTP 429 without one; the chart endpoint is keyless and also supplies the sparkline series.

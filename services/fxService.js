@@ -1,11 +1,5 @@
-/**
- * Market Pulse — Currency Conversion Service (Frankfurter / ECB reference rates)
- *
- * Not a quote provider: it answers "what is 1 USD in EUR", which is what the
- * display-currency preference needs. Rates are ECB daily fixings, so a one-hour
- * memory cache is generous.
- *
- * GPL-3.0 License
+/* Market Pulse — currency conversion rates
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 import GLib from 'gi://GLib';
@@ -20,15 +14,6 @@ export class FxService {
         this._rates = null;      // { USD: 1.15, GBP: 0.85, … } relative to EUR
         this._lastFetch = 0;
         this._inFlight = null;
-    }
-
-    /**
-     * Converts an amount between ISO currency codes. Returns the original
-     * amount unchanged when the rate is unknown — never a fabricated number.
-     */
-    async convert(amount, fromCurrency, toCurrency, cancellable = null) {
-        const rate = await this.getExchangeRate(fromCurrency, toCurrency, cancellable);
-        return rate === null ? amount : amount * rate;
     }
 
     async getExchangeRate(fromCurrency = 'USD', toCurrency = 'EUR', cancellable = null) {

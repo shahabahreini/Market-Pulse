@@ -1,4 +1,6 @@
-/* Market Pulse — Custom Extension Styling (GNOME HIG Compliant) */
+/* Market Pulse — extension stylesheet
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
 
 .market-pulse-panel-icon {
     margin-right: 6px;
@@ -222,7 +224,6 @@
 
 .market-pulse-name-box {
     spacing: 1px;
-    x-expand: true;
 }
 
 .market-pulse-price-box {
@@ -368,4 +369,10 @@
 .market-pulse-widget-price {
     font-size: 18px;
     font-weight: 600;
+}
+
+.market-pulse-pin-icon {
+    icon-size: 12px;
+    margin-left: 4px;
+    opacity: 0.7;
 }

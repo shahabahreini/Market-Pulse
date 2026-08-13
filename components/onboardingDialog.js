@@ -1,10 +1,5 @@
-/**
- * Market Pulse — First-Run Onboarding (plan §C13)
- *
- * Shown once, gated on the first-run-complete setting. Offers a demo portfolio
- * so a new user reaches live data in well under 30 seconds.
- *
- * GPL-3.0 License
+/* Market Pulse — first-run dialog
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 import St from 'gi://St';

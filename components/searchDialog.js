@@ -1,6 +1,5 @@
-/**
- * Market Pulse — Symbol Live Search Modal Dialog
- * GPL-3.0 License
+/* Market Pulse — symbol search dialog
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 import St from 'gi://St';
@@ -31,12 +30,10 @@ class SymbolSearchDialog extends ModalDialog.ModalDialog {
         content.set_style('width: 440px; padding: 16px;');
 
         const title = new St.Label({
-            text: '🔍 Add Stock or Crypto Symbol',
+            text: 'Add Symbol',
             style_class: 'market-pulse-dialog-title'
         });
         content.add_child(title);
-
-        // Search Input Entry
         this._entry = new St.Entry({
             hint_text: 'Search AAPL, TSLA, BTC-USD, S&P 500...',
             style_class: 'market-pulse-search-entry',
@@ -47,8 +44,6 @@ class SymbolSearchDialog extends ModalDialog.ModalDialog {
         this._entry.clutter_text.connect('text-changed', () => {
             this._onSearchTextChanged();
         });
-
-        // Results Container Box
         this._resultsScroll = new St.ScrollView({
             style_class: 'market-pulse-search-results-scroll',
             hscrollbar_policy: St.PolicyType.NEVER,
@@ -62,8 +57,6 @@ class SymbolSearchDialog extends ModalDialog.ModalDialog {
         });
         this._resultsScroll.add_child(this._resultsBox);
         content.add_child(this._resultsScroll);
-
-        // Quick Popular Choices Row
         this._popularBox = new St.BoxLayout({
             orientation: Clutter.Orientation.HORIZONTAL,
             style_class: 'market-pulse-popular-box'
@@ -88,7 +81,7 @@ class SymbolSearchDialog extends ModalDialog.ModalDialog {
         }
         content.add_child(this._popularBox);
 
-        // Recent searches (plan §B5) — one click back to a previous lookup.
+        // Recent searches — one click back to a previous lookup.
         const recent = settingsHelper.getRecentSearches();
         if (recent.length > 0) {
             const recentBox = new St.BoxLayout({
@@ -115,8 +108,6 @@ class SymbolSearchDialog extends ModalDialog.ModalDialog {
             }
             content.add_child(recentBox);
         }
-
-        // Dialog Action Buttons
         this.addButton({
             label: 'Cancel',
             action: () => this.close(),

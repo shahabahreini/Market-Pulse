@@ -1,6 +1,5 @@
-/**
- * Market Pulse — Portfolio & P&L Calculator
- * GPL-3.0 License
+/* Market Pulse — portfolio value and P&L
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 import { Formatter } from '../helpers/formatter.js';

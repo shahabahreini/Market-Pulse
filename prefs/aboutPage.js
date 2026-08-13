@@ -1,42 +1,53 @@
-/**
- * Market Pulse — Preferences About Page
- * GPL-3.0 License
+/* Market Pulse — preferences: about
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import Adw from "gi://Adw";
-import GObject from "gi://GObject";
+import Adw from 'gi://Adw';
+import GObject from 'gi://GObject';
 
 export const AboutPage = GObject.registerClass(
-  class AboutPage extends Adw.PreferencesPage {
-    _init() {
-      super._init({
-        title: "About",
-        icon_name: "help-about-symbolic",
-      });
+class AboutPage extends Adw.PreferencesPage {
+    _init(version) {
+        super._init({
+            title: 'About',
+            icon_name: 'help-about-symbolic'
+        });
 
-      const group = new Adw.PreferencesGroup();
+        const group = new Adw.PreferencesGroup();
 
-      const banner = new Adw.ActionRow({
-        title: "Market Pulse v1.0",
-        subtitle:
-          "Clean-room GNOME Shell Extension for stocks, crypto, and local portfolio P&L tracking.",
-      });
-      group.add(banner);
+        group.add(new Adw.ActionRow({
+            title: 'Market Pulse',
+            subtitle: `Version ${version}`
+        }));
 
-      const attrRow = new Adw.ActionRow({
-        title: "Attribution & Inspiration",
-        subtitle:
-          "Inspired by cinatic/stocks-extension (reference design only). Clean-room GJS implementation under GPL-3.0.",
-      });
-      group.add(attrRow);
+        group.add(new Adw.ActionRow({
+            title: 'Author',
+            subtitle: 'Shahab Bahreini Jangjoo (github.com/shahabahreini)'
+        }));
 
-      const authorRow = new Adw.ActionRow({
-        title: "Author",
-        subtitle: "Shahab Bahreini Jangjoo (github.com/shahabahreini)",
-      });
-      group.add(authorRow);
+        group.add(new Adw.ActionRow({
+            title: 'License',
+            subtitle: 'GPL-3.0-or-later'
+        }));
 
-      this.add(group);
+        this.add(group);
+
+        const dataGroup = new Adw.PreferencesGroup({
+            title: 'Data Sources',
+            description: 'Quotes come from public endpoints that need no account or API key. ' +
+                'Holdings and portfolio values are stored locally and are never transmitted.'
+        });
+
+        for (const [name, detail] of [
+            ['Yahoo Finance', 'Equities, ETFs, indices, crypto, forex'],
+            ['Eastmoney', 'Shanghai and Shenzhen listed shares'],
+            ['CoinGecko', 'Cryptocurrency spot prices'],
+            ['Binance', 'Cryptocurrency trading pairs'],
+            ['Frankfurter', 'European Central Bank reference rates']
+        ]) {
+            dataGroup.add(new Adw.ActionRow({ title: name, subtitle: detail }));
+        }
+
+        this.add(dataGroup);
     }
-  },
-);
+});

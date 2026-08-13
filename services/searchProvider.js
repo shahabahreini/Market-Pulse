@@ -1,11 +1,5 @@
-/**
- * Market Pulse — GNOME Shell Search Provider (plan §C11)
- *
- * Surfaces tracked symbols in the overview search. Results are served entirely
- * from the local quote cache: typing in the overview must never trigger a
- * network request.
- *
- * GPL-3.0 License
+/* Market Pulse — shell overview search provider
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 import Gio from 'gi://Gio';
@@ -18,8 +12,6 @@ export class MarketPulseSearchProvider {
         this._extension = extension;
         this._settings = settingsHelper;
         this._cache = cache;
-
-        // Shown as the result-group header in the overview.
         this.appInfo = Gio.AppInfo.create_from_commandline(
             'gnome-extensions prefs market-pulse@shahabahreini.github.com',
             'Market Pulse',

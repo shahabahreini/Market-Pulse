@@ -1,6 +1,5 @@
-/**
- * Market Pulse — GNOME Quick Settings Integration
- * GPL-3.0 License
+/* Market Pulse — Quick Settings toggle
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 import GObject from 'gi://GObject';

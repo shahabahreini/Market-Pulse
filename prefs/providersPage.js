@@ -1,6 +1,5 @@
-/**
- * Market Pulse — Preferences Providers Page
- * GPL-3.0 License
+/* Market Pulse — preferences: providers
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 import Adw from 'gi://Adw';

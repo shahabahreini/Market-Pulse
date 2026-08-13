@@ -1,6 +1,5 @@
-/**
- * Market Pulse — Data Models
- * GPL-3.0 License
+/* Market Pulse — data models
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 export class SymbolData {

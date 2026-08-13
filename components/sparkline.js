@@ -1,6 +1,5 @@
-/**
- * Market Pulse — Cairo Sparkline Component
- * GPL-3.0 License
+/* Market Pulse — menu row sparkline
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 import St from 'gi://St';

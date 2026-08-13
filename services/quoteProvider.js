@@ -1,20 +1,20 @@
-/**
- * Market Pulse — Base QuoteProvider Interface & Provider Registry
- * GPL-3.0 License
+/* Market Pulse — provider base class and registry
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 import Soup from 'gi://Soup?version=3.0';
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 
-const USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
+// Identify the client honestly rather than impersonating a browser.
+const USER_AGENT = 'MarketPulse-GnomeShellExtension/1.0 (+https://github.com/shahabahreini/market-pulse-gnome-extension)';
 
 // GJS does not auto-promisify Soup; without this every await returns undefined.
 Gio._promisify(Soup.Session.prototype, 'send_and_read_async');
 
 let _sharedSession = null;
 
-/** One Soup.Session for the whole extension (plan §A5). */
+/** One Soup.Session for the whole extension. */
 export function getSharedSession() {
     if (!_sharedSession) {
         _sharedSession = new Soup.Session({ timeout: 15 });
@@ -145,7 +145,7 @@ export class ProviderRegistry {
 
     /**
      * Providers that declare support for a symbol's asset class, ordered by the
-     * user's enabled list — the failover chain for that symbol (plan §C8).
+     * user's enabled list — the failover chain for that symbol.
      */
     getChainForSymbol(symbolObj, enabledIds) {
         const chain = [];

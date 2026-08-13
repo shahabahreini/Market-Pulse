@@ -1,6 +1,5 @@
-/**
- * Market Pulse — CoinGecko Provider Adapter (Cryptocurrency)
- * GPL-3.0 License
+/* Market Pulse — CoinGecko public API
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 import { BaseQuoteProvider } from '../quoteProvider.js';

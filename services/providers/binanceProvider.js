@@ -1,6 +1,5 @@
-/**
- * Market Pulse — Binance Provider Adapter (24/7 Crypto Pairs)
- * GPL-3.0 License
+/* Market Pulse — Binance public market data
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 import { BaseQuoteProvider } from '../quoteProvider.js';

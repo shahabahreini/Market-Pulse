@@ -1,6 +1,5 @@
-/**
- * Market Pulse — Eastmoney Provider Adapter (China Markets)
- * GPL-3.0 License
+/* Market Pulse — Eastmoney (China markets)
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 import { BaseQuoteProvider } from '../quoteProvider.js';
@@ -13,7 +12,6 @@ export class EastmoneyProvider extends BaseQuoteProvider {
 
     async fetchQuotes(symbols, cancellable = null) {
         if (!symbols || symbols.length === 0) return {};
-        // Filter for Chinese market symbols (e.g. 000001, 600519)
         const chinaSymbols = symbols.filter(s => /^\d{6}$/.test(s) || s.startsWith('sh') || s.startsWith('sz'));
         if (chinaSymbols.length === 0) return {};
 
