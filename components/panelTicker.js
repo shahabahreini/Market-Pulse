@@ -6,12 +6,14 @@ import St from 'gi://St';
 import GObject from 'gi://GObject';
 import GLib from 'gi://GLib';
 import Clutter from 'gi://Clutter';
+import Pango from 'gi://Pango';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import { Formatter } from '../helpers/formatter.js';
+import { symbolicGIcon } from '../helpers/icons.js';
 
 export const PanelTicker = GObject.registerClass(
 class PanelTicker extends PanelMenu.Button {
-    _init(settingsHelper, pollingScheduler) {
+    _init(settingsHelper, pollingScheduler, extensionPath) {
         super._init(0.5, 'Market Pulse', false);
 
         this._settingsHelper = settingsHelper;
@@ -26,7 +28,7 @@ class PanelTicker extends PanelMenu.Button {
         });
 
         this._icon = new St.Icon({
-            icon_name: 'market-pulse-symbolic',
+            gicon: symbolicGIcon(extensionPath),
             style_class: 'system-status-icon market-pulse-panel-icon'
         });
         this._box.add_child(this._icon);
@@ -36,6 +38,9 @@ class PanelTicker extends PanelMenu.Button {
             y_align: Clutter.ActorAlign.CENTER,
             style_class: 'market-pulse-panel-label'
         });
+        // Without this a long instrument name stretches the panel indefinitely;
+        // the max-width in the stylesheet cannot clip a label's natural width.
+        this._label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
         this._box.add_child(this._label);
 
         this._pinIcon = new St.Icon({
@@ -78,6 +83,13 @@ class PanelTicker extends PanelMenu.Button {
 
     updateQuotes(quotesMap) {
         this._quotesMap = quotesMap;
+        this.refreshDisplay();
+    }
+
+    /** A different portfolio means the current index no longer points at it. */
+    onPortfolioChanged() {
+        this._currentIndex = 0;
+        this._quotesMap = {};
         this.refreshDisplay();
     }
 
@@ -144,7 +156,7 @@ class PanelTicker extends PanelMenu.Button {
         const displayMode = this._settingsHelper.getDisplayModeForSymbol(targetSymObj.symbol);
         const isMasked = this._settingsHelper.get('hide-private-values');
 
-        let text = `${targetSymObj.name || targetSymObj.symbol}: `;
+        let text = `${targetSymObj.displayLabel}: `;
 
         if (!quote) {
             text += '...';

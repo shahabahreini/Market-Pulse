@@ -6,19 +6,21 @@ import Gio from 'gi://Gio';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { Formatter } from '../helpers/formatter.js';
+import { symbolicGIcon } from '../helpers/icons.js';
 
 export class MarketPulseSearchProvider {
     constructor(extension, settingsHelper, cache) {
         this._extension = extension;
         this._settings = settingsHelper;
         this._cache = cache;
+        this._gicon = symbolicGIcon(extension.path);
         this.appInfo = Gio.AppInfo.create_from_commandline(
             'gnome-extensions prefs market-pulse@shahabahreini.github.com',
             'Market Pulse',
             Gio.AppInfoCreateFlags.NONE
         );
         this.appInfo.get_name = () => 'Market Pulse';
-        this.appInfo.get_icon = () => new Gio.ThemedIcon({ name: 'market-pulse-symbolic' });
+        this.appInfo.get_icon = () => this._gicon;
         this.appInfo.should_show = () => false;
 
         this.id = extension.uuid;
@@ -32,7 +34,8 @@ export class MarketPulseSearchProvider {
         return portfolio.symbols
             .filter(s =>
                 s.symbol.toLowerCase().includes(query) ||
-                (s.name || '').toLowerCase().includes(query))
+                (s.name || '').toLowerCase().includes(query) ||
+                (s.nickname || '').toLowerCase().includes(query))
             .map(s => s.symbol);
     }
 
@@ -76,10 +79,10 @@ export class MarketPulseSearchProvider {
 
                 return {
                     id,
-                    name: symObj?.name || id,
+                    name: symObj?.displayLabel || id,
                     description,
                     createIcon: size => new St.Icon({
-                        icon_name: 'market-pulse-symbolic',
+                        gicon: this._gicon,
                         icon_size: size
                     })
                 };

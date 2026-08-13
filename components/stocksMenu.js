@@ -8,6 +8,8 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import { Sparkline } from './sparkline.js';
 import { DetailView } from './detailView.js';
 import { SymbolSearchDialog } from './searchDialog.js';
+import { RenameDialog } from './renameDialog.js';
+import { ConfirmDialog } from './confirmDialog.js';
 import { PortfolioCalculator } from '../services/portfolioCalculator.js';
 import { Formatter } from '../helpers/formatter.js';
 
@@ -89,11 +91,9 @@ export class StocksMenu {
         });
         this._connect(addBtn, 'clicked', () => {
             this._menu.close();
-            this._dialog = new SymbolSearchDialog(this._settings, this._registry, () => {
-                this._dialog = null;
+            this._openDialog(new SymbolSearchDialog(this._settings, this._registry, () => {
                 this._scheduler.triggerRefresh();
-            });
-            this._dialog.open();
+            }));
         });
         headerBox.add_child(addBtn);
 
@@ -105,6 +105,14 @@ export class StocksMenu {
         });
         this._offlineLabel.hide();
         headerSection.actor.add_child(this._offlineLabel);
+
+        // One chip per portfolio; only worth showing once there is a choice.
+        this._portfolioBox = new St.BoxLayout({
+            orientation: Clutter.Orientation.HORIZONTAL,
+            style_class: 'market-pulse-portfolio-box'
+        });
+        this._portfolioBox.hide();
+        headerSection.actor.add_child(this._portfolioBox);
 
         this._menu.addMenuItem(headerSection);
         this._summarySection = new PopupMenu.PopupMenuSection();
@@ -135,7 +143,8 @@ export class StocksMenu {
         this._detailView = new DetailView(this._registry, this._settings);
         this._detailView.setPopOutHandler(symObj => {
             this._menu.close();
-            this._extension.toggleWidget(symObj);
+            // Toggles: a second press closes the widget it opened.
+            this._extension.toggleWidget(this._extension.isWidgetOpen() ? null : symObj);
         });
         this._detailSection.actor.add_child(this._detailView);
         this._detailSection.actor.hide(); // Hidden until row selected
@@ -171,6 +180,11 @@ export class StocksMenu {
         this._menu.addMenuItem(footerSection);
     }
 
+    /** Called by the extension whenever the desktop widget opens or closes. */
+    syncWidgetState() {
+        this._detailView?.setWidgetOpen(this._extension.isWidgetOpen());
+    }
+
     updateQuotes(quotesMap, state = null) {
         this._quotesMap = quotesMap;
         this._isOffline = !!state?.offline;
@@ -198,8 +212,43 @@ export class StocksMenu {
         }
     }
 
+    /** Portfolio switcher chips, hidden while only one portfolio exists. */
+    renderPortfolioSelector() {
+        if (!this._portfolioBox) return;
+        this._portfolioBox.destroy_all_children();
+
+        const portfolios = this._settings.getPortfolios();
+        const ids = Object.keys(portfolios);
+        if (ids.length < 2) {
+            this._portfolioBox.hide();
+            return;
+        }
+
+        const activeId = this._settings.getActivePortfolioId();
+        for (const id of ids) {
+            const btn = new St.Button({
+                label: portfolios[id].name,
+                style_class: 'button market-pulse-popular-chip',
+                accessible_name: `Switch to ${portfolios[id].name}`
+            });
+            if (id === activeId) btn.add_style_class_name('selected');
+            btn.connect('clicked', () => {
+                if (id === this._settings.getActivePortfolioId()) return;
+                this._selectedSymbol = null;
+                this._detailSection.actor.hide();
+                // The extension's active-portfolio handler re-renders both the
+                // symbol list and these chips, so nothing more is needed here.
+                this._settings.setActivePortfolio(id);
+            });
+            this._portfolioBox.add_child(btn);
+        }
+        this._portfolioBox.show();
+    }
+
     renderSymbolList() {
         if (!this._symbolBox) return;
+        this._openActionBar = null;   // actors below are about to be destroyed
+        this.renderPortfolioSelector();
         this._symbolBox.destroy_all_children();
 
         const portfolio = this._settings.getActivePortfolio();
@@ -225,9 +274,11 @@ export class StocksMenu {
             return;
         }
 
-        for (const symObj of symbols) {
+        const pinned = this._settings.get('pinned-symbol');
+
+        for (const [index, symObj] of symbols.entries()) {
             const quote = this._quotesMap[symObj.symbol];
-            const rowBtn = new St.Button({ style_class: 'button market-pulse-symbol-row' });
+            const rowBtn = new St.Button({ style_class: 'button market-pulse-symbol-row', x_expand: true });
             const rowBox = new St.BoxLayout({ orientation: Clutter.Orientation.HORIZONTAL, style_class: 'market-pulse-row-box' });
 
             const hasError = !!quote?.error;
@@ -249,7 +300,7 @@ export class StocksMenu {
 
             const descText = hasError
                 ? `Last update ${Formatter.formatTime(quote.timestamp)}`
-                : (isStale ? `Cached ${Formatter.formatTime(quote.timestamp)}` : symObj.name);
+                : (isStale ? `Cached ${Formatter.formatTime(quote.timestamp)}` : symObj.displayLabel);
             nameBox.add_child(new St.Label({ text: descText, style_class: 'market-pulse-row-desc' }));
             rowBox.add_child(nameBox);
             const sparkline = new Sparkline(54, 22, isColorblind);
@@ -291,12 +342,134 @@ export class StocksMenu {
                 } else {
                     this._selectedSymbol = symObj.symbol;
                     this._detailView.setQuoteData(symObj, quote);
+                    this.syncWidgetState();
                     this._detailSection.actor.show();
                 }
             });
 
-            this._symbolBox.add_child(rowBtn);
+            // Row plus its (initially collapsed) action bar, so managing a
+            // symbol never means opening Preferences.
+            const rowContainer = new St.BoxLayout({
+                orientation: Clutter.Orientation.VERTICAL,
+                style_class: 'market-pulse-row-container'
+            });
+            const topLine = new St.BoxLayout({ orientation: Clutter.Orientation.HORIZONTAL });
+            topLine.add_child(rowBtn);
+
+            const moreBtn = new St.Button({
+                child: new St.Icon({ icon_name: 'view-more-symbolic', style_class: 'popup-menu-icon' }),
+                style_class: 'button market-pulse-icon-btn market-pulse-row-more-btn',
+                accessible_name: `Manage ${symObj.symbol}`
+            });
+            topLine.add_child(moreBtn);
+            rowContainer.add_child(topLine);
+
+            const actionBar = this._buildRowActions(symObj, index, symbols.length, pinned);
+            actionBar.hide();
+            rowContainer.add_child(actionBar);
+
+            moreBtn.connect('clicked', () => {
+                const wasOpen = actionBar.visible;
+                this._collapseRowActions();
+                if (!wasOpen) {
+                    actionBar.show();
+                    this._openActionBar = actionBar;
+                }
+            });
+
+            this._symbolBox.add_child(rowContainer);
         }
+    }
+
+    _collapseRowActions() {
+        if (this._openActionBar) {
+            // The bar may already be gone if the list re-rendered underneath.
+            try {
+                this._openActionBar.hide();
+            } catch (e) {
+                // Actor finalized — nothing to collapse.
+            }
+            this._openActionBar = null;
+        }
+    }
+
+    /** Pin / rename / reorder / remove, inline under the symbol row. */
+    _buildRowActions(symObj, index, total, pinned) {
+        const bar = new St.BoxLayout({
+            orientation: Clutter.Orientation.HORIZONTAL,
+            style_class: 'market-pulse-row-actions'
+        });
+
+        const addAction = (iconName, label, callback, sensitive = true) => {
+            const btn = new St.Button({
+                child: new St.Icon({ icon_name: iconName, style_class: 'popup-menu-icon' }),
+                style_class: 'button market-pulse-icon-btn',
+                accessible_name: label,
+                reactive: sensitive
+            });
+            if (!sensitive) btn.add_style_class_name('market-pulse-action-disabled');
+            else btn.connect('clicked', callback);
+            bar.add_child(btn);
+            return btn;
+        };
+
+        const isPinned = pinned === symObj.symbol;
+        addAction(
+            'view-pin-symbolic',
+            isPinned ? `Unpin ${symObj.symbol} from the top bar` : `Pin ${symObj.symbol} to the top bar`,
+            () => {
+                this._settings.setString('pinned-symbol', isPinned ? '' : symObj.symbol);
+                this._panelButton.refreshDisplay();
+                this.renderSymbolList();
+            }
+        ).add_style_class_name(isPinned ? 'selected' : 'market-pulse-action-idle');
+
+        addAction('document-edit-symbolic', `Rename ${symObj.symbol}`, () => {
+            this._menu.close();
+            this._openDialog(new RenameDialog(symObj, this._settings, () => {
+                this._panelButton.refreshDisplay();
+                this.renderSymbolList();
+            }));
+        });
+
+        addAction('go-up-symbolic', `Move ${symObj.symbol} up`, () => {
+            this._settings.moveSymbolInActivePortfolio(symObj.symbol, -1);
+            this._panelButton.refreshDisplay();
+            this.renderSymbolList();
+        }, index > 0);
+
+        addAction('go-down-symbolic', `Move ${symObj.symbol} down`, () => {
+            this._settings.moveSymbolInActivePortfolio(symObj.symbol, 1);
+            this._panelButton.refreshDisplay();
+            this.renderSymbolList();
+        }, index < total - 1);
+
+        addAction('user-trash-symbolic', `Remove ${symObj.symbol}`, () => {
+            this._menu.close();
+            this._openDialog(new ConfirmDialog({
+                heading: `Remove ${symObj.symbol}?`,
+                body: `${symObj.displayLabel} and its recorded holdings will be removed from this portfolio.`
+            }, () => {
+                this._settings.removeSymbolFromActivePortfolio(symObj.symbol);
+                if (this._selectedSymbol === symObj.symbol) {
+                    this._selectedSymbol = null;
+                    this._detailSection.actor.hide();
+                }
+                this._panelButton.refreshDisplay();
+                this.renderSymbolList();
+            }));
+        });
+
+        return bar;
+    }
+
+    /** Tracks the dialog so destroy() can tear down one left open. */
+    _openDialog(dialog) {
+        this._dialog = dialog;
+        dialog.connect('closed', () => {
+            if (this._dialog === dialog) this._dialog = null;
+        });
+        dialog.open();
     }
 
     destroy() {

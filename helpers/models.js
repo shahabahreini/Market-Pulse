@@ -3,13 +3,22 @@
  */
 
 export class SymbolData {
-    constructor({ symbol, name, type = 'equity', provider = 'yahoo', currency = 'USD', exchange = '' }) {
+    constructor({ symbol, name, nickname = '', type = 'equity', provider = 'yahoo', currency = 'USD', exchange = '' }) {
         this.symbol = symbol;
         this.name = name || symbol;
+        this.nickname = nickname;  // short user label for the top bar
         this.type = type; // 'equity', 'etf', 'index', 'crypto', 'forex'
         this.provider = provider;
         this.currency = currency;
         this.exchange = exchange;
+    }
+
+    /**
+     * What the user should see. A prototype getter rather than a field, so
+     * JSON.stringify still round-trips exactly the stored properties.
+     */
+    get displayLabel() {
+        return this.nickname || this.name || this.symbol;
     }
 }
 

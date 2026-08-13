@@ -65,6 +65,23 @@ export class Formatter {
         return `${sign}${Formatter.formatCurrency(val, currency)}`;
     }
 
+    /**
+     * Escapes text destined for a Pango markup slot. Instrument names routinely
+     * contain '&' — "S&P 500" ships in the default portfolio — and an
+     * unescaped one makes the label render as an empty string.
+     *
+     * Applies to Adw group titles/descriptions and row titles/subtitles, which
+     * set use-markup. It does NOT apply to Adw.AlertDialog heading/body or
+     * ComboRow item labels, which are plain text — escaping those would show a
+     * literal "&amp;".
+     */
+    static escapeMarkup(text) {
+        return String(text ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
     static formatTime(timestamp) {
         if (!timestamp) return '—';
         const date = new Date(timestamp);

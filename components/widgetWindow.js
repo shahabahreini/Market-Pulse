@@ -5,6 +5,7 @@
 import St from 'gi://St';
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
+import Pango from 'gi://Pango';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { ChartCanvas } from './chart.js';
 import { Formatter } from '../helpers/formatter.js';
@@ -40,6 +41,10 @@ class WidgetWindow extends St.BoxLayout {
             x_expand: true,
             y_align: Clutter.ActorAlign.CENTER
         });
+        // The widget is a fixed width; an un-ellipsized title would push the
+        // close button past the right edge, out of the allocation.
+        this._titleLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+        this._header = header;
         header.add_child(this._titleLabel);
 
         this._closeBtn = new St.Button({
@@ -47,7 +52,7 @@ class WidgetWindow extends St.BoxLayout {
             style_class: 'button market-pulse-icon-btn',
             accessible_name: 'Close desktop widget'
         });
-        this._closeBtn.connect('clicked', () => this._onClose?.());
+        this._closeBtn.connect('clicked', () => this._requestClose());
         header.add_child(this._closeBtn);
         this.add_child(header);
 
@@ -64,11 +69,38 @@ class WidgetWindow extends St.BoxLayout {
         this._onClose = handler;
     }
 
-    /** Click-and-drag repositioning; the widget stays inside the work area. */
+    _requestClose() {
+        const handler = this._onClose;
+        handler?.();
+    }
+
+    /** True when `actor` is the close button or lives inside it. */
+    _isInCloseButton(actor) {
+        for (let a = actor; a; a = a.get_parent()) {
+            if (a === this._closeBtn) return true;
+            if (a === this) return false;
+        }
+        return false;
+    }
+
+    /**
+     * Click-and-drag repositioning.
+     *
+     * The drag holds a stage grab for its whole duration. Without one, a
+     * release delivered outside the widget — easy, since the widget trails the
+     * pointer by a frame — never reaches this actor, leaving _dragStart set so
+     * the widget follows the cursor forever and its close button can never be
+     * clicked.
+     */
     _setupDragging() {
         this.connect('button-press-event', (actor, event) => {
+            if (event.get_button() !== Clutter.BUTTON_PRIMARY) return Clutter.EVENT_PROPAGATE;
+            // Never begin a drag on the close button's own press.
+            if (this._isInCloseButton(event.get_source())) return Clutter.EVENT_PROPAGATE;
+
             const [x, y] = event.get_coords();
             this._dragStart = { x, y, actorX: this.x, actorY: this.y };
+            this._grab = global.stage.grab(this);
             return Clutter.EVENT_STOP;
         });
 
@@ -83,9 +115,53 @@ class WidgetWindow extends St.BoxLayout {
         });
 
         this.connect('button-release-event', () => {
-            this._dragStart = null;
+            if (!this._dragStart) return Clutter.EVENT_PROPAGATE;
+            this._endDrag();
+            this._savePosition();
             return Clutter.EVENT_STOP;
         });
+
+        // Escape always closes, independently of pointer event routing.
+        this.connect('key-press-event', (actor, event) => {
+            if (event.get_key_symbol() !== Clutter.KEY_Escape) return Clutter.EVENT_PROPAGATE;
+            this._requestClose();
+            return Clutter.EVENT_STOP;
+        });
+    }
+
+    _endDrag() {
+        this._dragStart = null;
+        if (this._grab) {
+            this._grab.dismiss();
+            this._grab = null;
+        }
+    }
+
+    _savePosition() {
+        try {
+            this._settings.setString('widget-position', JSON.stringify({ x: this.x, y: this.y }));
+        } catch (e) {
+            console.warn(`[market-pulse] Could not save widget position: ${e.message}`);
+        }
+    }
+
+    /**
+     * Last saved position, clamped so a widget saved on a monitor that is no
+     * longer attached cannot land off-screen.
+     */
+    _restoredPosition(workArea) {
+        try {
+            const raw = this._settings.get('widget-position');
+            if (!raw) return null;
+            const { x, y } = JSON.parse(raw);
+            if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+            return [
+                Math.min(Math.max(x, workArea.x), workArea.x + workArea.width - WIDGET_WIDTH),
+                Math.min(Math.max(y, workArea.y), workArea.y + workArea.height - 80)
+            ];
+        } catch (e) {
+            return null;
+        }
     }
 
     show(symbolObj, quote) {
@@ -97,13 +173,19 @@ class WidgetWindow extends St.BoxLayout {
             this._addedToChrome = true;
 
             const workArea = Main.layoutManager.getWorkAreaForMonitor(Main.layoutManager.primaryIndex);
-            this.set_position(
-                workArea.x + workArea.width - WIDGET_WIDTH - SCREEN_MARGIN,
-                workArea.y + SCREEN_MARGIN
-            );
+            const restored = this._restoredPosition(workArea);
+            if (restored) {
+                this.set_position(restored[0], restored[1]);
+            } else {
+                this.set_position(
+                    workArea.x + workArea.width - WIDGET_WIDTH - SCREEN_MARGIN,
+                    workArea.y + SCREEN_MARGIN
+                );
+            }
         }
 
         this.visible = true;
+        this.grab_key_focus();   // so Escape reaches the handler
         this._loadChart();
     }
 
@@ -111,7 +193,7 @@ class WidgetWindow extends St.BoxLayout {
         this._quote = quote;
         if (!this._symbol) return;
 
-        this._titleLabel.set_text(`${this._symbol.name} (${this._symbol.symbol})`);
+        this._titleLabel.set_text(`${this._symbol.displayLabel} (${this._symbol.symbol})`);
 
         if (this._settings.get('hide-private-values')) {
             this._priceLabel.set_text('••••••');
@@ -138,6 +220,10 @@ class WidgetWindow extends St.BoxLayout {
     }
 
     destroy() {
+        if (this._destroyed) return;
+        this._destroyed = true;
+
+        this._endDrag();
         if (this._addedToChrome) {
             Main.layoutManager.removeChrome(this);
             this._addedToChrome = false;

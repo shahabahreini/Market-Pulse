@@ -18,7 +18,10 @@ export default class MarketPulsePreferences extends ExtensionPreferences {
         window.add(new PortfolioPage(settingsHelper));
         window.add(new ProvidersPage(settingsHelper));
         window.add(new AlertsPage(settingsHelper));
-        window.add(new AboutPage(this.metadata['version-name'] ?? String(this.metadata.version)));
+        window.add(new AboutPage(
+            this.metadata['version-name'] ?? String(this.metadata.version),
+            this.path
+        ));
 
         // Flush pending writes and disconnect handlers when the window closes.
         window.connect('close-request', () => {

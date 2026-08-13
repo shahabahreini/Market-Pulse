@@ -24,6 +24,7 @@ import { WidgetWindow } from './components/widgetWindow.js';
 import { OnboardingDialog } from './components/onboardingDialog.js';
 import { MarketPulseSearchProvider } from './services/searchProvider.js';
 import { Formatter } from './helpers/formatter.js';
+import { symbolicGIcon } from './helpers/icons.js';
 
 export default class MarketPulseExtension extends Extension {
     enable() {
@@ -44,7 +45,7 @@ export default class MarketPulseExtension extends Extension {
             this._fx.prefetch();
 
             // Initialize Alert Engine
-            this._alertEngine = new AlertEngine(this._settings);
+            this._alertEngine = new AlertEngine(this._settings, symbolicGIcon(this.path));
 
             // Initialize Adaptive Polling Scheduler
             this._scheduler = new PollingScheduler(
@@ -62,7 +63,7 @@ export default class MarketPulseExtension extends Extension {
             );
 
             // Create Top Panel Ticker Indicator
-            this._panelTicker = new PanelTicker(this._settings, this._scheduler);
+            this._panelTicker = new PanelTicker(this._settings, this._scheduler, this.path);
             const position = this._settings.get('panel-position') || 'right';
             Main.panel.addToStatusArea(this.uuid, this._panelTicker, 0, position);
 
@@ -75,24 +76,23 @@ export default class MarketPulseExtension extends Extension {
                 this._registry
             );
 
-            // GNOME Quick Settings Integration
-            if (this._settings.get('quick-settings-integration')) {
-                try {
-                    this._quickSettings = new QuickSettingsIndicator(this._scheduler);
-                } catch (e) {
-                    console.warn(`[market-pulse] Quick Settings fallback: ${e.message}`);
-                }
-            }
+            this._syncQuickSettings();
+            this._syncSearchProvider();
+            this._syncKeybinding();
 
-            // Shell overview search provider
-            if (this._settings.get('search-provider-enabled')) {
-                this._registerSearchProvider();
-            }
-
-            // Configurable keyboard shortcut for the panel menu
-            if (this._settings.get('menu-shortcut-enabled')) {
-                this._addKeybinding();
-            }
+            // Integration preferences take effect immediately, so the user
+            // never has to disable and re-enable the extension.
+            this._settings.connect('quick-settings-integration', () => this._syncQuickSettings());
+            this._settings.connect('search-provider-enabled', () => this._syncSearchProvider());
+            this._settings.connect('menu-shortcut-enabled', () => this._syncKeybinding());
+            this._settings.connect('menu-shortcut', () => this._syncKeybinding(true));
+            this._settings.connect('panel-position', () => this._syncPanelPosition());
+            this._settings.connect('active-portfolio', () => {
+                this._panelTicker?.onPortfolioChanged();
+                // Rows only exist while the menu is open.
+                if (this._panelTicker?.menu.isOpen) this._stocksMenu?.renderSymbolList();
+                this._scheduler?.triggerRefresh();
+            });
 
             // Start Polling Loop
             this._scheduler.start();
@@ -107,6 +107,67 @@ export default class MarketPulseExtension extends Extension {
     }
 
     // --- Optional integrations ---
+    //
+    // Each _sync* method brings one integration in line with its current
+    // preference and is safe to call repeatedly.
+
+    _syncQuickSettings() {
+        const wanted = this._settings.get('quick-settings-integration');
+        if (wanted && !this._quickSettings) {
+            try {
+                this._quickSettings = new QuickSettingsIndicator(this._scheduler);
+            } catch (e) {
+                console.warn(`[market-pulse] Quick Settings fallback: ${e.message}`);
+            }
+        } else if (!wanted && this._quickSettings) {
+            this._quickSettings.destroy();
+            this._quickSettings = null;
+        }
+    }
+
+    _syncSearchProvider() {
+        const wanted = this._settings.get('search-provider-enabled');
+        if (wanted && !this._searchProvider) {
+            this._registerSearchProvider();
+        } else if (!wanted && this._searchProvider) {
+            this._unregisterSearchProvider();
+        }
+    }
+
+    /** `force` re-registers an already-active binding after an accel change. */
+    _syncKeybinding(force = false) {
+        const wanted = this._settings.get('menu-shortcut-enabled');
+        if (this._keybindingAdded && (force || !wanted)) {
+            Main.wm.removeKeybinding('menu-shortcut');
+            this._keybindingAdded = false;
+        }
+        if (wanted && !this._keybindingAdded) {
+            this._addKeybinding();
+        }
+    }
+
+    /**
+     * Moves the existing indicator between panel boxes. addToStatusArea cannot
+     * be called twice for one role, so the container is re-parented directly.
+     */
+    _syncPanelPosition() {
+        if (!this._panelTicker) return;
+        const position = this._settings.get('panel-position') || 'right';
+        try {
+            const box = {
+                left: Main.panel._leftBox,
+                center: Main.panel._centerBox,
+                right: Main.panel._rightBox
+            }[position];
+            if (!box) return;
+
+            const container = this._panelTicker.container;
+            container.get_parent()?.remove_child(container);
+            box.insert_child_at_index(container, position === 'right' ? 0 : box.get_n_children());
+        } catch (e) {
+            console.warn(`[market-pulse] Could not move panel indicator: ${e.message}`);
+        }
+    }
 
     _registerSearchProvider() {
         try {
@@ -119,6 +180,17 @@ export default class MarketPulseExtension extends Extension {
             console.warn(`[market-pulse] Search provider unavailable: ${e.message}`);
             this._searchProvider = null;
         }
+    }
+
+    _unregisterSearchProvider() {
+        if (!this._searchProvider) return;
+        try {
+            Main.overview.searchController.removeProvider(this._searchProvider);
+        } catch (e) {
+            console.warn(`[market-pulse] Could not remove search provider: ${e.message}`);
+        }
+        this._searchProvider.destroy();
+        this._searchProvider = null;
     }
 
     _addKeybinding() {
@@ -136,12 +208,17 @@ export default class MarketPulseExtension extends Extension {
         }
     }
 
+    isWidgetOpen() {
+        return !!this._widget;
+    }
+
     /** Opens the detached always-on-top chart widget. */
     toggleWidget(symbolObj) {
         if (this._widget) {
             this._widget.destroy();
             this._widget = null;
             this._widgetSymbol = null;
+            this._stocksMenu?.syncWidgetState();
             return;
         }
         if (!symbolObj) return;
@@ -150,6 +227,7 @@ export default class MarketPulseExtension extends Extension {
         this._widget = new WidgetWindow(this._settings, this._registry);
         this._widget.setCloseHandler(() => this.toggleWidget(null));
         this._widget.show(symbolObj, this._cache.get(symbolObj.symbol));
+        this._stocksMenu?.syncWidgetState();
     }
 
     _showOnboarding() {
@@ -184,11 +262,7 @@ export default class MarketPulseExtension extends Extension {
                 Main.wm.removeKeybinding('menu-shortcut');
                 this._keybindingAdded = false;
             }
-            if (this._searchProvider) {
-                Main.overview.searchController.removeProvider(this._searchProvider);
-                this._searchProvider.destroy();
-                this._searchProvider = null;
-            }
+            this._unregisterSearchProvider();
 
             // 1. Destroy Quick Settings Indicator
             if (this._quickSettings) {

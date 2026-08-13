@@ -26,6 +26,10 @@
     border-radius: 6px;
 }
 
+.market-pulse-icon-btn.selected {
+    background-color: rgba(255, 255, 255, 0.16);
+}
+
 .market-pulse-summary-banner {
     padding: 8px 14px;
     background-color: rgba(255, 255, 255, 0.05);
@@ -174,6 +178,16 @@
     margin-right: 6px;
 }
 
+.market-pulse-popular-chip.selected {
+    background-color: rgba(255, 255, 255, 0.16);
+    font-weight: bold;
+}
+
+.market-pulse-portfolio-box {
+    padding: 2px 12px 6px 12px;
+    spacing: 4px;
+}
+
 /* --- Panel ticker --- */
 
 .market-pulse-ticker-box {
@@ -251,6 +265,34 @@
 
 .market-pulse-sparkline {
     margin: 0 8px;
+}
+
+/* --- Per-row management actions --- */
+
+.market-pulse-row-container {
+    spacing: 2px;
+}
+
+.market-pulse-row-more-btn {
+    margin-right: 4px;
+    opacity: 0.55;
+}
+
+.market-pulse-row-more-btn:hover {
+    opacity: 1;
+}
+
+.market-pulse-row-actions {
+    spacing: 4px;
+    padding: 4px 8px 6px 12px;
+}
+
+.market-pulse-action-disabled {
+    opacity: 0.3;
+}
+
+.market-pulse-action-idle {
+    opacity: 0.75;
 }
 
 /* --- Detail view --- */
@@ -345,6 +387,26 @@
 .market-pulse-onboarding-item {
     font-size: 12px;
     opacity: 0.9;
+}
+
+.market-pulse-preset-row {
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin-bottom: 4px;
+}
+
+.market-pulse-preset-box {
+    spacing: 2px;
+}
+
+.market-pulse-preset-title {
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.market-pulse-preset-desc {
+    font-size: 11px;
+    opacity: 0.7;
 }
 
 /* --- Desktop widget --- */

@@ -183,6 +183,12 @@
       <description>Most recent symbol search queries, offered as shortcuts in the add-symbol dialog.</description>
     </key>
 
+    <key name="widget-position" type="s">
+      <default>''</default>
+      <summary>Desktop Widget Position</summary>
+      <description>JSON encoded x and y screen coordinates the detached chart widget was last dragged to.</description>
+    </key>
+
     <key name="schema-version" type="i">
       <default>1</default>
       <summary>Settings Schema Version</summary>

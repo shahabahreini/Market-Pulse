@@ -6,6 +6,7 @@ import Adw from 'gi://Adw';
 import Gtk from 'gi://Gtk';
 import GObject from 'gi://GObject';
 import { AlertRule } from '../helpers/models.js';
+import { Formatter } from '../helpers/formatter.js';
 
 export const AlertsPage = GObject.registerClass(
 class AlertsPage extends Adw.PreferencesPage {
@@ -138,9 +139,11 @@ class AlertsPage extends Adw.PreferencesPage {
             else if (rule.condition === 'GAIN_PCT') desc = `Target: Surge >= +${rule.threshold.toFixed(2)}%`;
             else if (rule.condition === 'LOSS_PCT') desc = `Target: Drop >= -${rule.threshold.toFixed(2)}%`;
 
+            // Row titles and subtitles are Pango markup: the '<' in "Price <="
+            // would otherwise be parsed as a tag and blank the whole line.
             const row = new Adw.SwitchRow({
-                title: `${rule.symbol}`,
-                subtitle: desc,
+                title: Formatter.escapeMarkup(rule.symbol),
+                subtitle: Formatter.escapeMarkup(desc),
                 active: rule.enabled
             });
 

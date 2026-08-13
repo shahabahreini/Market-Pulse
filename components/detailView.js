@@ -5,6 +5,7 @@
 import St from 'gi://St';
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
+import Pango from 'gi://Pango';
 import { ChartCanvas } from './chart.js';
 import { Formatter } from '../helpers/formatter.js';
 import { copyToClipboard } from '../helpers/clipboardShell.js';
@@ -45,6 +46,7 @@ class DetailView extends St.BoxLayout {
             style_class: 'market-pulse-detail-title',
             x_expand: true
         });
+        this._titleLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END;
         this._marketStatusBadge = new St.Label({ text: '', style_class: 'market-pulse-status-badge' });
 
         this._copyBtn = new St.Button({
@@ -54,7 +56,9 @@ class DetailView extends St.BoxLayout {
         });
         this._copyBtn.connect('clicked', () => this._copyQuote());
 
-        // Detach into the always-on-top desktop widget.
+        // Detach into the always-on-top desktop widget. The same button closes
+        // it again, so there is a close path that does not depend on the
+        // widget's own event handling.
         this._popOutBtn = new St.Button({
             child: new St.Icon({ icon_name: 'view-restore-symbolic', style_class: 'popup-menu-icon' }),
             style_class: 'button market-pulse-icon-btn',
@@ -124,6 +128,16 @@ class DetailView extends St.BoxLayout {
         this._onPopOut = handler;
     }
 
+    /** Reflects whether the desktop widget is currently open. */
+    setWidgetOpen(isOpen) {
+        if (!this._popOutBtn) return;
+        this._popOutBtn.accessible_name = isOpen
+            ? 'Close desktop widget'
+            : 'Open as desktop widget';
+        if (isOpen) this._popOutBtn.add_style_class_name('selected');
+        else this._popOutBtn.remove_style_class_name('selected');
+    }
+
     _syncTimeframeButtons() {
         for (const [range, btn] of this._tfButtons) {
             if (range === this._range) btn.add_style_class_name('selected');
@@ -133,7 +147,7 @@ class DetailView extends St.BoxLayout {
 
     _copyQuote() {
         if (!this._quote || !this._currentSymbol) return;
-        const text = `${this._currentSymbol.name} (${this._quote.symbol}): ` +
+        const text = `${this._currentSymbol.displayLabel} (${this._quote.symbol}): ` +
             `${Formatter.formatCurrency(this._quote.price, this._quote.currency)} ` +
             `(${Formatter.formatPercent(this._quote.changePercent)})`;
         copyToClipboard(text);
@@ -146,7 +160,7 @@ class DetailView extends St.BoxLayout {
         this._syncTimeframeButtons();
 
         if (!quote) {
-            this._titleLabel.set_text(symbolObj?.name || 'Loading…');
+            this._titleLabel.set_text(symbolObj?.displayLabel || 'Loading…');
             this._marketStatusBadge.set_text('');
             this._showNotice('Waiting for the first quote…');
             this._statsGrid.destroy_all_children();
@@ -155,7 +169,7 @@ class DetailView extends St.BoxLayout {
         }
 
         const mStatus = MarketHours.getMarketStatus(symbolObj.symbol, quote.marketState);
-        this._titleLabel.set_text(`${symbolObj.name} (${quote.symbol})`);
+        this._titleLabel.set_text(`${symbolObj.displayLabel} (${quote.symbol})`);
         this._marketStatusBadge.set_text(mStatus.label);
 
         // Per-symbol error and staleness states.

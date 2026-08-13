@@ -8,6 +8,7 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
 import { ExportHelper } from '../helpers/export.js';
+import { Formatter } from '../helpers/formatter.js';
 import { copyToClipboard } from '../helpers/clipboardPrefs.js';
 
 // An empty key means "use the global ticker format".
@@ -60,15 +61,23 @@ class PortfolioPage extends Adw.PreferencesPage {
     }
 
     _buildUi() {
+        // --- Group 0: Which portfolio am I editing? ---
+        this._portfolioGroup = new Adw.PreferencesGroup({
+            title: 'Portfolio',
+            description: 'Keep separate lists, for example a watchlist and long-term holdings'
+        });
+        this._buildPortfolioSelector();
+        this.add(this._portfolioGroup);
+
         // --- Group 1: Display & Privacy ---
         const privacyGroup = new Adw.PreferencesGroup({
-            title: 'Display & Privacy Options',
+            title: 'Display &amp; Privacy Options',
             description: 'Mask portfolio values for screen sharing'
         });
 
         const maskRow = new Adw.SwitchRow({
             title: 'Mask Portfolio Values',
-            subtitle: 'Hide total holdings and P&L amounts in UI',
+            subtitle: 'Hide total holdings and P&amp;L amounts in UI',
             active: this._settingsHelper.get('hide-private-values')
         });
         maskRow.connect('notify::active', () => {
@@ -90,8 +99,8 @@ class PortfolioPage extends Adw.PreferencesPage {
 
         // --- Group 2: Interactive Symbol Holdings & Cost Basis Editor ---
         this._symbolsGroup = new Adw.PreferencesGroup({
-            title: 'Tracked Symbols & Cost Basis (P&L)',
-            description: 'Enter your shares quantity and buy price to track real-time position profit & loss'
+            title: 'Tracked Symbols &amp; Cost Basis (P&amp;L)',
+            description: 'Enter your shares quantity and buy price to track real-time position profit &amp; loss'
         });
 
         this.refreshSymbolsList();
@@ -99,7 +108,7 @@ class PortfolioPage extends Adw.PreferencesPage {
 
         // --- Group 3: Data Import & Export ---
         const exportGroup = new Adw.PreferencesGroup({
-            title: 'Backup, Import & Export',
+            title: 'Backup, Import &amp; Export',
             description: 'Portfolio holdings are stored locally and never leave this device'
         });
 
@@ -152,6 +161,133 @@ class PortfolioPage extends Adw.PreferencesPage {
         exportGroup.add(importRow);
 
         this.add(exportGroup);
+    }
+
+    /**
+     * Rebuilt in place whenever the set of portfolios changes, so the combo's
+     * model and the id list it indexes into never drift apart.
+     */
+    _buildPortfolioSelector() {
+        if (this._selectorRow) {
+            this._portfolioGroup.remove(this._selectorRow);
+            this._selectorRow = null;
+        }
+
+        const portfolios = this._settingsHelper.getPortfolios();
+        this._portfolioIds = Object.keys(portfolios);
+        const activeId = this._settingsHelper.getActivePortfolioId();
+
+        const row = new Adw.ComboRow({
+            title: 'Active Portfolio',
+            // ComboRow item labels are plain text, not markup — do not escape.
+            model: new Gtk.StringList({
+                strings: this._portfolioIds.map(id => portfolios[id].name)
+            })
+        });
+        row.set_selected(Math.max(0, this._portfolioIds.indexOf(activeId)));
+
+        row.connect('notify::selected', () => {
+            const id = this._portfolioIds[row.get_selected()];
+            if (!id || id === this._settingsHelper.getActivePortfolioId()) return;
+            this._settingsHelper.setActivePortfolio(id);
+            this.refreshSymbolsList();
+        });
+
+        const addBtn = new Gtk.Button({
+            icon_name: 'list-add-symbolic',
+            valign: Gtk.Align.CENTER,
+            tooltip_text: 'New portfolio',
+            css_classes: ['flat']
+        });
+        addBtn.connect('clicked', () => this._promptPortfolioName('New Portfolio', '', name => {
+            const id = this._settingsHelper.createPortfolio(name);
+            this._settingsHelper.setActivePortfolio(id);
+            this._buildPortfolioSelector();
+            this.refreshSymbolsList();
+        }));
+        row.add_suffix(addBtn);
+
+        const renameBtn = new Gtk.Button({
+            icon_name: 'document-edit-symbolic',
+            valign: Gtk.Align.CENTER,
+            tooltip_text: 'Rename portfolio',
+            css_classes: ['flat']
+        });
+        renameBtn.connect('clicked', () => {
+            const id = this._portfolioIds[row.get_selected()];
+            if (!id) return;
+            this._promptPortfolioName('Rename Portfolio', portfolios[id].name, name => {
+                this._settingsHelper.renamePortfolio(id, name);
+                this._buildPortfolioSelector();
+            });
+        });
+        row.add_suffix(renameBtn);
+
+        const delBtn = new Gtk.Button({
+            icon_name: 'user-trash-symbolic',
+            valign: Gtk.Align.CENTER,
+            tooltip_text: 'Delete portfolio',
+            css_classes: ['flat'],
+            sensitive: this._portfolioIds.length > 1
+        });
+        delBtn.connect('clicked', () => {
+            const id = this._portfolioIds[row.get_selected()];
+            if (!id) return;
+            this._confirmDeletePortfolio(id, portfolios[id].name);
+        });
+        row.add_suffix(delBtn);
+
+        this._portfolioGroup.add(row);
+        this._selectorRow = row;
+    }
+
+    _promptPortfolioName(heading, initial, onAccept) {
+        const dialog = new Adw.AlertDialog({ heading });
+        const entry = new Gtk.Entry({
+            text: initial,
+            activates_default: true,
+            margin_top: 12,
+            margin_bottom: 12,
+            margin_start: 12,
+            margin_end: 12
+        });
+        dialog.set_extra_child(entry);
+
+        dialog.add_response('cancel', 'Cancel');
+        dialog.add_response('save', 'Save');
+        dialog.set_response_appearance('save', Adw.ResponseAppearance.SUGGESTED);
+        dialog.set_default_response('save');
+        dialog.set_close_response('cancel');
+
+        dialog.connect('response', (_d, response) => {
+            if (response !== 'save') return;
+            const name = entry.get_text().trim();
+            if (name) onAccept(name);
+        });
+
+        dialog.present(this.get_root());
+    }
+
+    _confirmDeletePortfolio(id, name) {
+        // AlertDialog heading and body are plain text by default.
+        const dialog = new Adw.AlertDialog({
+            heading: `Delete ${name}?`,
+            body: 'Its symbols and recorded holdings will be removed. This cannot be undone.'
+        });
+        dialog.add_response('cancel', 'Cancel');
+        dialog.add_response('delete', 'Delete');
+        dialog.set_response_appearance('delete', Adw.ResponseAppearance.DESTRUCTIVE);
+        dialog.set_default_response('cancel');
+        dialog.set_close_response('cancel');
+
+        dialog.connect('response', (_d, response) => {
+            if (response !== 'delete') return;
+            this._settingsHelper.deletePortfolio(id);
+            this._buildPortfolioSelector();
+            this.refreshSymbolsList();
+        });
+
+        dialog.present(this.get_root());
     }
 
     _onImportClicked() {
@@ -230,9 +366,22 @@ class PortfolioPage extends Adw.PreferencesPage {
             const holding = portfolio.holdings[symObj.symbol] || { quantity: 0, buyPrice: 0 };
 
             const expRow = new Adw.ExpanderRow({
-                title: `${symObj.symbol} — ${symObj.name}`,
+                title: this._symbolTitle(symObj),
                 subtitle: this._holdingSubtitle(holding.quantity, holding.buyPrice)
             });
+
+            const nickRow = new Adw.EntryRow({
+                title: 'Short name for the top bar',
+                text: symObj.nickname || ''
+            });
+            nickRow.set_show_apply_button(true);
+            nickRow.connect('apply', () => {
+                const nickname = nickRow.get_text().trim();
+                this._settingsHelper.setSymbolNickname(symObj.symbol, nickname);
+                symObj.nickname = nickname;
+                expRow.set_title(this._symbolTitle(symObj));
+            });
+            expRow.add_row(nickRow);
 
             const updateHolding = (mutate) => {
                 const portfolios = this._settingsHelper.getPortfolios();
@@ -307,6 +456,10 @@ class PortfolioPage extends Adw.PreferencesPage {
         }
     }
 
+    _symbolTitle(symObj) {
+        return `${Formatter.escapeMarkup(symObj.symbol)} — ${Formatter.escapeMarkup(symObj.displayLabel)}`;
+    }
+
     _holdingSubtitle(quantity, buyPrice) {
         return `Holdings: ${Number(quantity) || 0} @ ${(Number(buyPrice) || 0).toFixed(2)}`;
     }
@@ -315,7 +468,7 @@ class PortfolioPage extends Adw.PreferencesPage {
     _confirmRemove(symObj) {
         const dialog = new Adw.AlertDialog({
             heading: `Remove ${symObj.symbol}?`,
-            body: `${symObj.name} and its recorded holdings will be removed from this portfolio.`
+            body: `${symObj.displayLabel} and its recorded holdings will be removed from this portfolio.`
         });
         dialog.add_response('cancel', 'Cancel');
         dialog.add_response('remove', 'Remove');

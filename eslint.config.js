@@ -15,6 +15,7 @@ export default [
             globals: {
                 // GJS runtime globals
                 console: 'readonly',
+                global: 'readonly',   // GNOME Shell's global (stage, display, …)
                 globalThis: 'readonly',
                 imports: 'readonly',
                 pkg: 'readonly',

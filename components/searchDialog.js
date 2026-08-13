@@ -9,6 +9,7 @@ import Gio from 'gi://Gio';
 import Clutter from 'gi://Clutter';
 import * as ModalDialog from 'resource:///org/gnome/shell/ui/modalDialog.js';
 import { SymbolData } from '../helpers/models.js';
+import { PRESETS } from '../helpers/presets.js';
 
 export const SymbolSearchDialog = GObject.registerClass(
 class SymbolSearchDialog extends ModalDialog.ModalDialog {
@@ -80,6 +81,28 @@ class SymbolSearchDialog extends ModalDialog.ModalDialog {
             this._popularBox.add_child(btn);
         }
         content.add_child(this._popularBox);
+
+        // Whole starter lists in one press, for users who do not have a
+        // particular ticker in mind.
+        const presetBox = new St.BoxLayout({
+            orientation: Clutter.Orientation.HORIZONTAL,
+            style_class: 'market-pulse-popular-box'
+        });
+        presetBox.add_child(new St.Label({
+            text: 'Lists:',
+            style_class: 'market-pulse-recent-label',
+            y_align: Clutter.ActorAlign.CENTER
+        }));
+        for (const preset of PRESETS) {
+            const btn = new St.Button({
+                label: preset.label,
+                style_class: 'button market-pulse-popular-chip',
+                accessible_name: `Add ${preset.label}: ${preset.description}`
+            });
+            btn.connect('clicked', () => this._addPreset(preset));
+            presetBox.add_child(btn);
+        }
+        content.add_child(presetBox);
 
         // Recent searches — one click back to a previous lookup.
         const recent = settingsHelper.getRecentSearches();
@@ -174,6 +197,25 @@ class SymbolSearchDialog extends ModalDialog.ModalDialog {
                 style_class: 'market-pulse-empty-search-label'
             });
             this._resultsBox.add_child(emptyLabel);
+
+            // Providers do not know every listing. Let the user add the ticker
+            // anyway rather than dead-ending the search.
+            const ticker = query.toUpperCase();
+            const manualBtn = new St.Button({
+                label: `Add "${ticker}" anyway`,
+                style_class: 'button market-pulse-search-result-row',
+                accessible_name: `Add ${ticker} without a search match`,
+                x_expand: true
+            });
+            manualBtn.connect('clicked', () => {
+                this._addSymbol(new SymbolData({ symbol: ticker, name: ticker }));
+            });
+            this._resultsBox.add_child(manualBtn);
+
+            this._resultsBox.add_child(new St.Label({
+                text: 'Prices will appear once a provider recognises the symbol.',
+                style_class: 'market-pulse-empty-search-label'
+            }));
             return;
         }
 
@@ -204,6 +246,14 @@ class SymbolSearchDialog extends ModalDialog.ModalDialog {
         }
     }
 
+    _addPreset(preset) {
+        for (const s of preset.symbols) {
+            this._settingsHelper.addSymbolToActivePortfolio(new SymbolData(s));
+        }
+        this._onSymbolAdded?.(null);
+        this.close();
+    }
+
     _addSymbol(symbolObj) {
         this._settingsHelper.addRecentSearch(symbolObj.symbol);
         this._settingsHelper.addSymbolToActivePortfolio(symbolObj);
@@ -214,6 +264,11 @@ class SymbolSearchDialog extends ModalDialog.ModalDialog {
     }
 
     destroy() {
+        // ModalDialog's 'closed' handler and an explicit close() both land
+        // here; without this guard the second pass hits a disposed object.
+        if (this._destroyed) return;
+        this._destroyed = true;
+
         if (this._searchDebounceId) {
             GLib.Source.remove(this._searchDebounceId);
             this._searchDebounceId = null;

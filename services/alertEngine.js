@@ -7,8 +7,9 @@ import * as MessageTray from 'resource:///org/gnome/shell/ui/messageTray.js';
 import { Formatter } from '../helpers/formatter.js';
 
 export class AlertEngine {
-    constructor(settingsHelper) {
+    constructor(settingsHelper, gicon = null) {
         this._settingsHelper = settingsHelper;
+        this._gicon = gicon;
         this._triggeredSet = new Set();
         this._source = null;
     }
@@ -17,7 +18,7 @@ export class AlertEngine {
         if (!this._source) {
             this._source = new MessageTray.Source({
                 title: 'Market Pulse',
-                iconName: 'market-pulse-symbolic'
+                icon: this._gicon
             });
             Main.messageTray.add(this._source);
         }
@@ -27,11 +28,18 @@ export class AlertEngine {
         if (!this._settingsHelper.get('alerts-enabled')) return;
         if (this._isQuietHours()) return;
 
+        // Notification headlines use the user's label; bodies keep the raw
+        // ticker so the symbol being alerted on is never ambiguous.
+        const labels = new Map(
+            this._settingsHelper.getActivePortfolio().symbols.map(s => [s.symbol, s.displayLabel])
+        );
+
         const rules = this._settingsHelper.getAlertRules();
         for (const rule of rules) {
             if (!rule.enabled) continue;
             const quote = quotesMap[rule.symbol];
             if (!quote) continue;
+            const label = labels.get(rule.symbol) || rule.symbol;
 
             const triggerKey = `${rule.id}_${Math.floor(Date.now() / (15 * 60 * 1000))}`; // Throttle 15m
             if (this._triggeredSet.has(triggerKey)) continue;
@@ -42,19 +50,19 @@ export class AlertEngine {
 
             if (rule.condition === 'ABOVE_PRICE' && quote.price >= rule.threshold) {
                 isTriggered = true;
-                title = `${rule.symbol} reached its target`;
+                title = `${label} reached its target`;
                 body = `${rule.symbol} reached ${Formatter.formatCurrency(quote.price, quote.currency)} (Above target ${Formatter.formatCurrency(rule.threshold, quote.currency)})`;
             } else if (rule.condition === 'BELOW_PRICE' && quote.price <= rule.threshold) {
                 isTriggered = true;
-                title = `${rule.symbol} fell below its target`;
+                title = `${label} fell below its target`;
                 body = `${rule.symbol} fell to ${Formatter.formatCurrency(quote.price, quote.currency)} (Below target ${Formatter.formatCurrency(rule.threshold, quote.currency)})`;
             } else if (rule.condition === 'GAIN_PCT' && quote.changePercent >= rule.threshold) {
                 isTriggered = true;
-                title = `${rule.symbol} is up ${quote.changePercent.toFixed(2)}% today`;
+                title = `${label} is up ${quote.changePercent.toFixed(2)}% today`;
                 body = `${rule.symbol} is up ${Formatter.formatPercent(quote.changePercent)} today at ${Formatter.formatCurrency(quote.price, quote.currency)}`;
             } else if (rule.condition === 'LOSS_PCT' && quote.changePercent <= -Math.abs(rule.threshold)) {
                 isTriggered = true;
-                title = `${rule.symbol} is down ${Math.abs(quote.changePercent).toFixed(2)}% today`;
+                title = `${label} is down ${Math.abs(quote.changePercent).toFixed(2)}% today`;
                 body = `${rule.symbol} dropped ${Formatter.formatPercent(quote.changePercent)} today at ${Formatter.formatCurrency(quote.price, quote.currency)}`;
             }
 

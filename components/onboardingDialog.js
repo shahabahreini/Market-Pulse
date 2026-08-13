@@ -7,12 +7,7 @@ import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
 import * as ModalDialog from 'resource:///org/gnome/shell/ui/modalDialog.js';
 import { SymbolData } from '../helpers/models.js';
-
-const DEMO_SYMBOLS = [
-    { symbol: '^GSPC', name: 'S&P 500', type: 'index', provider: 'yahoo' },
-    { symbol: '^IXIC', name: 'NASDAQ Composite', type: 'index', provider: 'yahoo' },
-    { symbol: 'BTC-USD', name: 'Bitcoin USD', type: 'crypto', provider: 'yahoo' }
-];
+import { PRESETS } from '../helpers/presets.js';
 
 export const OnboardingDialog = GObject.registerClass(
 class OnboardingDialog extends ModalDialog.ModalDialog {
@@ -25,7 +20,7 @@ class OnboardingDialog extends ModalDialog.ModalDialog {
         this.connect('closed', () => this.destroy());
 
         const content = this.contentLayout;
-        content.set_style('width: 420px; padding: 20px;');
+        content.set_style('width: 460px; padding: 20px;');
 
         content.add_child(new St.Label({
             text: 'Welcome to Market Pulse',
@@ -33,8 +28,8 @@ class OnboardingDialog extends ModalDialog.ModalDialog {
         }));
 
         content.add_child(new St.Label({
-            text: 'Track live stock and crypto quotes right in your top bar.\n' +
-                  'Start with a demo portfolio, or add your own symbols with the “+” button in the menu.',
+            text: 'Track live stock and crypto prices right in your top bar.\n' +
+                  'Pick a starter list below — you can add, rename or remove anything later.',
             style_class: 'market-pulse-onboarding-body'
         }));
 
@@ -42,40 +37,54 @@ class OnboardingDialog extends ModalDialog.ModalDialog {
             orientation: Clutter.Orientation.VERTICAL,
             style_class: 'market-pulse-onboarding-list'
         });
-        for (const s of DEMO_SYMBOLS) {
-            list.add_child(new St.Label({
-                text: `• ${s.symbol} — ${s.name}`,
-                style_class: 'market-pulse-onboarding-item'
+
+        for (const preset of PRESETS) {
+            const btn = new St.Button({
+                style_class: 'button market-pulse-preset-row',
+                accessible_name: `Start with ${preset.label}`,
+                x_expand: true
+            });
+
+            const box = new St.BoxLayout({
+                orientation: Clutter.Orientation.VERTICAL,
+                style_class: 'market-pulse-preset-box'
+            });
+            box.add_child(new St.Label({
+                text: preset.label,
+                style_class: 'market-pulse-preset-title'
             }));
+            box.add_child(new St.Label({
+                text: preset.description,
+                style_class: 'market-pulse-preset-desc'
+            }));
+            btn.set_child(box);
+
+            btn.connect('clicked', () => this._finish(preset.symbols));
+            list.add_child(btn);
         }
         content.add_child(list);
 
         this.addButton({
             label: 'Start Empty',
-            action: () => this._finish(false),
+            action: () => this._finish(null),
             key: Clutter.KEY_Escape
-        });
-        this.addButton({
-            label: 'Add Demo Portfolio',
-            action: () => this._finish(true),
-            default: true
         });
     }
 
-    _finish(useDemo) {
+    /** `symbols` null means an explicit empty start. */
+    _finish(symbols) {
         try {
-            if (useDemo) {
-                for (const s of DEMO_SYMBOLS) {
-                    this._settings.addSymbolToActivePortfolio(new SymbolData(s));
-                }
-            } else {
-                // Explicit empty start: clear the schema's default symbols.
-                const portfolios = this._settings.getPortfolios();
-                const activeId = this._settings.get('active-portfolio') || 'default';
-                if (portfolios[activeId]) {
-                    portfolios[activeId].symbols = [];
-                    this._settings.savePortfolios(portfolios);
-                }
+            // The schema ships a default watchlist, so the choice made here
+            // replaces it rather than adding to it.
+            const portfolios = this._settings.getPortfolios();
+            const activeId = this._settings.get('active-portfolio') || 'default';
+            if (portfolios[activeId]) {
+                portfolios[activeId].symbols = [];
+                this._settings.savePortfolios(portfolios);
+            }
+
+            for (const s of symbols ?? []) {
+                this._settings.addSymbolToActivePortfolio(new SymbolData(s));
             }
             this._settings.setBoolean('first-run-complete', true);
         } catch (e) {
@@ -85,10 +94,14 @@ class OnboardingDialog extends ModalDialog.ModalDialog {
         const finished = this._onFinished;
         this._onFinished = null;
         this.close();
-        finished?.(useDemo);
+        finished?.(!!symbols);
     }
 
     destroy() {
+        // Both the 'closed' handler and _finish()'s close() reach this.
+        if (this._destroyed) return;
+        this._destroyed = true;
+
         this._onFinished = null;
         super.destroy();
     }

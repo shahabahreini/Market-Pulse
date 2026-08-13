@@ -78,34 +78,107 @@ export class SettingsHelper {
         this._pendingPortfolios = null;
     }
 
+    // --- Multiple Portfolios ---
+
+    getActivePortfolioId() {
+        return this._settings.get_string('active-portfolio') || 'default';
+    }
+
+    setActivePortfolio(id) {
+        if (!this.getPortfolios()[id]) return false;
+        this._settings.set_string('active-portfolio', id);
+        return true;
+    }
+
+    /** Creates a portfolio and returns its generated id. */
+    createPortfolio(name) {
+        const portfolios = this.getPortfolios();
+        const id = `p_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        portfolios[id] = new Portfolio({
+            id,
+            name: (name || '').trim() || 'New Portfolio'
+        });
+        this.savePortfolios(portfolios);
+        return id;
+    }
+
+    renamePortfolio(id, name) {
+        const portfolios = this.getPortfolios();
+        if (!portfolios[id]) return false;
+        portfolios[id].name = (name || '').trim() || portfolios[id].name;
+        this.savePortfolios(portfolios);
+        return true;
+    }
+
+    /** Refuses to delete the last portfolio — there must always be one. */
+    deletePortfolio(id) {
+        const portfolios = this.getPortfolios();
+        if (!portfolios[id] || Object.keys(portfolios).length <= 1) return false;
+
+        delete portfolios[id];
+        this.savePortfolios(portfolios);
+
+        if (this.getActivePortfolioId() === id) {
+            this._settings.set_string('active-portfolio', Object.keys(portfolios)[0]);
+        }
+        return true;
+    }
+
     getActivePortfolio() {
-        const activeId = this._settings.get_string('active-portfolio') || 'default';
+        const activeId = this.getActivePortfolioId();
         const portfolios = this.getPortfolios();
         return portfolios[activeId] || Object.values(portfolios)[0] || new Portfolio({});
     }
 
-    addSymbolToActivePortfolio(symbolObj) {
+    /**
+     * Runs `mutate` against the active portfolio and saves when it reports a
+     * change, creating the portfolio if it has gone missing.
+     */
+    _mutateActivePortfolio(mutate) {
         const portfolios = this.getPortfolios();
-        const activeId = this._settings.get_string('active-portfolio') || 'default';
+        const activeId = this.getActivePortfolioId();
         if (!portfolios[activeId]) {
             portfolios[activeId] = new Portfolio({ id: activeId, name: 'Main Portfolio' });
         }
 
-        const exists = portfolios[activeId].symbols.some(s => s.symbol === symbolObj.symbol);
-        if (!exists) {
-            portfolios[activeId].symbols.push(symbolObj);
-            this.savePortfolios(portfolios);
-        }
+        if (mutate(portfolios[activeId]) === false) return false;
+        this.savePortfolios(portfolios);
+        return true;
+    }
+
+    addSymbolToActivePortfolio(symbolObj) {
+        return this._mutateActivePortfolio(portfolio => {
+            if (portfolio.symbols.some(s => s.symbol === symbolObj.symbol)) return false;
+            portfolio.symbols.push(symbolObj);
+        });
     }
 
     removeSymbolFromActivePortfolio(symbolStr) {
-        const portfolios = this.getPortfolios();
-        const activeId = this._settings.get_string('active-portfolio') || 'default';
-        if (portfolios[activeId]) {
-            portfolios[activeId].symbols = portfolios[activeId].symbols.filter(s => s.symbol !== symbolStr);
-            delete portfolios[activeId].holdings[symbolStr];
-            this.savePortfolios(portfolios);
-        }
+        return this._mutateActivePortfolio(portfolio => {
+            portfolio.symbols = portfolio.symbols.filter(s => s.symbol !== symbolStr);
+            delete portfolio.holdings[symbolStr];
+        });
+    }
+
+    /** Short user-facing label for the top bar; empty string clears it. */
+    setSymbolNickname(symbolStr, nickname) {
+        return this._mutateActivePortfolio(portfolio => {
+            const target = portfolio.symbols.find(s => s.symbol === symbolStr);
+            if (!target) return false;
+            target.nickname = (nickname || '').trim();
+        });
+    }
+
+    /** Moves a symbol by `delta` places; a move off either end is a no-op. */
+    moveSymbolInActivePortfolio(symbolStr, delta) {
+        return this._mutateActivePortfolio(portfolio => {
+            const from = portfolio.symbols.findIndex(s => s.symbol === symbolStr);
+            if (from < 0) return false;
+            const to = from + delta;
+            if (to < 0 || to >= portfolio.symbols.length) return false;
+            const [moved] = portfolio.symbols.splice(from, 1);
+            portfolio.symbols.splice(to, 0, moved);
+        });
     }
 
     // --- Per-Symbol Ticker Display Overrides ---

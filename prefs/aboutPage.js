@@ -3,17 +3,27 @@
  */
 
 import Adw from 'gi://Adw';
+import Gtk from 'gi://Gtk';
 import GObject from 'gi://GObject';
 
 export const AboutPage = GObject.registerClass(
 class AboutPage extends Adw.PreferencesPage {
-    _init(version) {
+    _init(version, extensionPath) {
         super._init({
             title: 'About',
             icon_name: 'help-about-symbolic'
         });
 
         const group = new Adw.PreferencesGroup();
+
+        if (extensionPath) {
+            group.add(new Gtk.Image({
+                file: `${extensionPath}/icons/market-pulse-icon.svg`,
+                pixel_size: 96,
+                margin_top: 12,
+                margin_bottom: 12
+            }));
+        }
 
         group.add(new Adw.ActionRow({
             title: 'Market Pulse',
