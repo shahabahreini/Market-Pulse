@@ -6,6 +6,7 @@
 import St from 'gi://St';
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
+import GLib from 'gi://GLib';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import { Sparkline } from './sparkline.js';
 import { DetailView } from './detailView.js';
@@ -23,6 +24,7 @@ export class StocksMenu {
         this._menu = panelButton.menu;
         this._quotesMap = {};
         this._selectedSymbol = null;
+        this._lastUpdatedTime = null;
 
         this._buildMenu();
     }
@@ -119,16 +121,38 @@ export class StocksMenu {
 
         this._menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
-        // 5. Bottom Settings Action Item (Section 3 A1 fix)
-        const settingsItem = new PopupMenu.PopupMenuItem('⚙️  Extension Settings...');
-        settingsItem.connect('activate', () => {
+        // 5. Freshness Footer & Bottom Settings Action Item
+        const footerSection = new PopupMenu.PopupMenuSection();
+        const footerBox = new St.BoxLayout({
+            vertical: false,
+            style_class: 'market-pulse-menu-footer'
+        });
+
+        this._freshnessLabel = new St.Label({
+            text: 'Updated: --:--',
+            style_class: 'market-pulse-freshness-label',
+            x_expand: true,
+            y_align: Clutter.ActorAlign.CENTER
+        });
+        footerBox.add_child(this._freshnessLabel);
+
+        const settingsBtn = new St.Button({
+            label: '⚙️ Settings',
+            style_class: 'button market-pulse-settings-link-btn'
+        });
+        settingsBtn.connect('clicked', () => {
             this._extension.openPreferences();
         });
-        this._menu.addMenuItem(settingsItem);
+        footerBox.add_child(settingsBtn);
+
+        footerSection.actor.add_child(footerBox);
+        this._menu.addMenuItem(footerSection);
     }
 
     updateQuotes(quotesMap) {
         this._quotesMap = quotesMap;
+        this._lastUpdatedTime = Date.now();
+        this._freshnessLabel.set_text(`Updated: ${Formatter.formatTime(this._lastUpdatedTime)}`);
         this.renderSymbolList();
     }
 

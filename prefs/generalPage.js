@@ -17,8 +17,23 @@ class GeneralPage extends Adw.PreferencesPage {
 
         this._settings = settings;
 
-        // --- Group 1: Top Panel Ticker ---
-        const panelGroup = new Adw.PreferencesGroup({ title: 'Top Panel Ticker' });
+        // --- Group 1: Top Panel Ticker & Placement ---
+        const panelGroup = new Adw.PreferencesGroup({ title: 'Top Panel Ticker & Placement' });
+
+        // Panel Placement ComboRow
+        const posRow = new Adw.ComboRow({
+            title: 'Top Panel Position',
+            subtitle: 'Location of Market Pulse indicator in GNOME top bar',
+            model: new Gtk.StringList({
+                strings: ['Right', 'Center', 'Left']
+            })
+        });
+        const posEnum = this._settings.get_enum('panel-position');
+        posRow.set_selected(posEnum);
+        posRow.connect('notify::selected', () => {
+            this._settings.set_enum('panel-position', posRow.get_selected());
+        });
+        panelGroup.add(posRow);
 
         // Ticker Display Mode
         const modeRow = new Adw.ComboRow({
@@ -72,6 +87,17 @@ class GeneralPage extends Adw.PreferencesPage {
             this._settings.set_boolean('ticker-pause-on-hover', hoverRow.get_active());
         });
         panelGroup.add(hoverRow);
+
+        // Quick Settings Menu Toggle
+        const qsRow = new Adw.SwitchRow({
+            title: 'Quick Settings Integration',
+            subtitle: 'Show pause/resume polling toggle in GNOME Quick Settings menu',
+            active: this._settings.get_boolean('quick-settings-integration')
+        });
+        qsRow.connect('notify::active', () => {
+            this._settings.set_boolean('quick-settings-integration', qsRow.get_active());
+        });
+        panelGroup.add(qsRow);
 
         this.add(panelGroup);
 

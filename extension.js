@@ -19,6 +19,7 @@ import { PollingScheduler } from './services/pollingScheduler.js';
 import { AlertEngine } from './services/alertEngine.js';
 import { PanelTicker } from './components/panelTicker.js';
 import { StocksMenu } from './components/stocksMenu.js';
+import { QuickSettingsIndicator } from './components/quickSettingsToggle.js';
 
 export default class MarketPulseExtension extends Extension {
     enable() {
@@ -64,6 +65,15 @@ export default class MarketPulseExtension extends Extension {
                 this._registry
             );
 
+            // GNOME Quick Settings Integration
+            if (this._settings.get('quick-settings-integration')) {
+                try {
+                    this._quickSettings = new QuickSettingsIndicator(this._scheduler);
+                } catch (e) {
+                    console.warn(`[market-pulse] Quick Settings fallback: ${e.message}`);
+                }
+            }
+
             // Start Polling Loop
             this._scheduler.start();
         } catch (e) {
@@ -73,43 +83,49 @@ export default class MarketPulseExtension extends Extension {
 
     disable() {
         try {
-            // 1. Destroy session alert engine
+            // 1. Destroy Quick Settings Indicator
+            if (this._quickSettings) {
+                this._quickSettings.destroy();
+                this._quickSettings = null;
+            }
+
+            // 2. Destroy session alert engine
             if (this._alertEngine) {
                 this._alertEngine.destroy();
                 this._alertEngine = null;
             }
 
-            // 2. Stop and destroy polling scheduler (cancels timeouts & network listeners)
+            // 3. Stop and destroy polling scheduler
             if (this._scheduler) {
                 this._scheduler.destroy();
                 this._scheduler = null;
             }
 
-            // 3. Destroy popup menu
+            // 4. Destroy popup menu
             if (this._stocksMenu) {
                 this._stocksMenu.destroy();
                 this._stocksMenu = null;
             }
 
-            // 4. Destroy top bar panel button and all Clutter/St actors
+            // 5. Destroy top bar panel button and clutter actors
             if (this._panelTicker) {
                 this._panelTicker.destroy();
                 this._panelTicker = null;
             }
 
-            // 5. Destroy provider registry (abort in-flight Soup HTTP requests)
+            // 6. Destroy provider registry
             if (this._registry) {
                 this._registry.destroy();
                 this._registry = null;
             }
 
-            // 6. Save and destroy quote cache
+            // 7. Save and destroy quote cache
             if (this._cache) {
                 this._cache.destroy();
                 this._cache = null;
             }
 
-            // 7. Disconnect all GSettings signal handlers
+            // 8. Disconnect all GSettings signal handlers
             if (this._settings) {
                 this._settings.destroy();
                 this._settings = null;

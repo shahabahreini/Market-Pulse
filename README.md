@@ -23,25 +23,25 @@
 
 ## Desktop & Shell Compatibility
 
-| Component | Specification |
-|---|---|
-| **GNOME Shell** | 46, 47, 48, 49, 50+ |
-| **GJS Engine** | ES2022+ / GJS 1.80+ |
-| **UI Framework** | Libadwaita / St / Clutter |
+| Component          | Specification                    |
+| ------------------ | -------------------------------- |
+| **GNOME Shell**    | 46, 47, 48, 49, 50+              |
+| **GJS Engine**     | ES2022+ / GJS 1.80+              |
+| **UI Framework**   | Libadwaita / St / Clutter        |
 | **Resource Usage** | Idle CPU ~0%, Memory < 15 MB RSS |
 
 ---
 
 ## Data Providers
 
-| Provider | Asset Classes | Coverage | Default |
-|---|---|---|---|
-| **Yahoo Finance** | Equities, ETFs, Indices, Crypto, FX | Global | Enabled |
-| **Eastmoney** | A-Shares, SSE, SZSE, Hong Kong | China | Enabled |
-| **Stooq** | Equities, Indices, Commodities | Global CSV | Optional |
-| **CoinGecko Free** | Cryptocurrencies | Global | Optional |
-| **Binance Public** | Crypto pairs | Global 24/7 | Optional |
-| **Frankfurter** | Foreign exchange rates | ECB FX | Enabled |
+| Provider           | Asset Classes                       | Coverage    | Default  |
+| ------------------ | ----------------------------------- | ----------- | -------- |
+| **Yahoo Finance**  | Equities, ETFs, Indices, Crypto, FX | Global      | Enabled  |
+| **Eastmoney**      | A-Shares, SSE, SZSE, Hong Kong      | China       | Enabled  |
+| **Stooq**          | Equities, Indices, Commodities      | Global CSV  | Optional |
+| **CoinGecko Free** | Cryptocurrencies                    | Global      | Optional |
+| **Binance Public** | Crypto pairs                        | Global 24/7 | Optional |
+| **Frankfurter**    | Foreign exchange rates              | ECB FX      | Enabled  |
 
 ---
 
@@ -66,15 +66,19 @@ gnome-extensions enable market-pulse@shahabahreini.github.com
 ## Frequently Asked Questions (FAQ)
 
 ### How do I add a stock or crypto symbol in Market Pulse?
+
 Click the Market Pulse top bar indicator to open the dropdown menu, then click the `+` button in the header. Type any symbol (such as `AAPL` for Apple or `BTC-USD` for Bitcoin) into the search box and select it from the live results.
 
 ### Which GNOME versions does Market Pulse support?
+
 Market Pulse natively supports GNOME Shell versions 46, 47, 48, 49, and 50+.
 
 ### Does Market Pulse support cryptocurrency tracking?
+
 Yes. Market Pulse provides real-time 24/7 quotes and charts for major cryptocurrencies including Bitcoin (`BTC-USD`), Ethereum (`ETH-USD`), Solana (`SOL-USD`), and Binance pairs via Yahoo Finance, CoinGecko, and Binance adapters.
 
 ### Which data providers does Market Pulse use?
+
 Market Pulse ships with built-in adapters for Yahoo Finance, Eastmoney (China markets), Stooq, CoinGecko, Binance, and Frankfurter ECB FX rates. You can multi-select and prioritize providers in the preferences menu.
 
 ---
@@ -87,4 +91,4 @@ Market Pulse is built as a clean-room GNOME Shell extension inspired by the feat
 
 ## License
 
-Copyright © 2026 Shahab Ahreini. Released under the [GNU General Public License v3.0](LICENSE).
+Copyright © 2026 Shahab Bahreini Jangjoo. Released under the [GNU General Public License v3.0](LICENSE).

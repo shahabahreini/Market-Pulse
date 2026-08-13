@@ -18,7 +18,7 @@
     "portfolio-tracker",
     "gjs"
   ],
-  "author": "Shahab Ahreini",
+  "author": "Shahab Bahreini Jangjoo",
   "license": "GPL-3.0-only",
   "devDependencies": {
     "eslint": "^9.0.0"

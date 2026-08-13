@@ -8,6 +8,7 @@ import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
 import { ChartCanvas } from './chart.js';
 import { Formatter } from '../helpers/formatter.js';
+import { ExportHelper } from '../helpers/export.js';
 import { MarketHours } from '../helpers/marketHours.js';
 
 export const DetailView = GObject.registerClass(
@@ -23,12 +24,26 @@ class DetailView extends St.BoxLayout {
         this._registry = providerRegistry;
         this._currentSymbol = null;
 
-        // Top Header
+        // Top Header Row
         this._headerBox = new St.BoxLayout({ vertical: false, style_class: 'market-pulse-detail-header' });
-        this._titleLabel = new St.Label({ text: 'Symbol Details', style_class: 'market-pulse-detail-title' });
+        this._titleLabel = new St.Label({ text: 'Symbol Details', style_class: 'market-pulse-detail-title', x_expand: true });
         this._marketStatusBadge = new St.Label({ text: '', style_class: 'market-pulse-status-badge' });
+
+        this._copyBtn = new St.Button({
+            child: new St.Icon({ icon_name: 'edit-copy-symbolic', style_class: 'popup-menu-icon' }),
+            style_class: 'button market-pulse-icon-btn',
+            tooltip_text: 'Copy quote to clipboard'
+        });
+        this._copyBtn.connect('clicked', () => {
+            if (this._quote) {
+                const text = `${this._currentSymbol.name} (${this._quote.symbol}): ${Formatter.formatCurrency(this._quote.price, this._quote.currency)} (${Formatter.formatPercent(this._quote.changePercent)})`;
+                ExportHelper.copyToClipboard(text);
+            }
+        });
+
         this._headerBox.add_child(this._titleLabel);
         this._headerBox.add_child(this._marketStatusBadge);
+        this._headerBox.add_child(this._copyBtn);
         this.add_child(this._headerBox);
 
         // Interactive Cairo Chart
@@ -76,7 +91,6 @@ class DetailView extends St.BoxLayout {
         // Clear existing stats grid rows
         this._statsGrid.destroy_all_children();
 
-        const isMasked = false; // Detail stats
         const stats = [
             { label: 'Open', val: Formatter.formatCurrency(quote.open, quote.currency) },
             { label: 'High', val: Formatter.formatCurrency(quote.high, quote.currency) },
