@@ -1,0 +1,65 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Publish Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies & Run checks
+        run: |
+          npm install
+          npx eslint . --max-warnings 0
+
+      - name: Install GNOME & GLib tooling
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libglib2.0-dev-bin gnome-shell zip
+
+      - name: Verify metadata & module syntax
+        run: |
+          make check
+          node -e "
+            const m = require('./metadata.json');
+            const required = ['uuid', 'name', 'description', 'shell-version', 'version', 'settings-schema'];
+            for (const key of required) {
+              if (!(key in m)) throw new Error('metadata.json missing ' + key);
+            }
+            if (m.uuid !== 'market-pulse@shahabahreini.github.com') throw new Error('uuid mismatch');
+            console.log('metadata.json verified for release: ' + m.uuid + ' (v' + m['version-name'] + ')');
+          "
+
+      - name: Build Extension Release Package
+        run: |
+          make release
+          VERSION="${GITHUB_REF_NAME#v}"
+          PACKAGE_NAME="market-pulse-v${VERSION}.shell-extension.zip"
+          cp market-pulse@shahabahreini.github.com.shell-extension.zip "$PACKAGE_NAME"
+          echo "PACKAGE_NAME=$PACKAGE_NAME" >> "$GITHUB_ENV"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Market Pulse v${{ env.VERSION }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            ${{ env.PACKAGE_NAME }}
+            market-pulse@shahabahreini.github.com.shell-extension.zip

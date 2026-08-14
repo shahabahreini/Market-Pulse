@@ -119,6 +119,15 @@ To cleanly remove the extension from your system:
 make uninstall
 ```
 
+### GitHub Releases & Automated Builds
+
+Pushing a version tag (e.g. `v1.0.0`) automatically triggers the release workflow to run linting, syntax verification, and package zip artifacts (`market-pulse-v<version>.shell-extension.zip` and standard UUID pack) attached directly to the GitHub Release:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
 ---
 
 ## Frequently Asked Questions (FAQ)
