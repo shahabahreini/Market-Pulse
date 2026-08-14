@@ -2,7 +2,7 @@ UUID = market-pulse@shahabahreini.github.com
 EXT_DIR = $(HOME)/.local/share/gnome-shell/extensions/$(UUID)
 SOURCES = metadata.json extension.js prefs.js stylesheet.css schemas icons services components helpers prefs
 
-.PHONY: all compile-schemas check lint install uninstall zip lifecycle-test clean
+.PHONY: all compile-schemas check lint install uninstall reinstall status pack release zip lifecycle-test clean
 
 all: check
 
@@ -27,7 +27,53 @@ install: compile-schemas
 	cp -r $(SOURCES) $(EXT_DIR)/
 
 uninstall:
+	@if command -v gnome-extensions >/dev/null 2>&1; then \
+		gnome-extensions uninstall $(UUID) 2>/dev/null || true; \
+	fi
 	rm -rf $(EXT_DIR)
+	@echo "Uninstalled $(UUID)."
+
+reinstall: uninstall install
+	@if command -v gnome-extensions >/dev/null 2>&1; then \
+		gnome-extensions enable $(UUID) 2>/dev/null || true; \
+	fi
+	@echo "Reinstalled and enabled $(UUID)."
+
+status:
+	@echo "=== Extension Status: $(UUID) ==="
+	@if [ -d "$(EXT_DIR)" ]; then \
+		echo "Installed: Yes ($(EXT_DIR))"; \
+	else \
+		echo "Installed: No"; \
+	fi
+	@if command -v gnome-extensions >/dev/null 2>&1; then \
+		echo "\n--- gnome-extensions info ---"; \
+		gnome-extensions info $(UUID) 2>/dev/null || echo "Extension not recognized by gnome-extensions CLI (may need GNOME Shell restart or login session)"; \
+		echo "\n--- Shell state ---"; \
+		if gnome-extensions list --enabled 2>/dev/null | grep -q "^$(UUID)$$"; then \
+			echo "State: ENABLED"; \
+		elif gnome-extensions list --disabled 2>/dev/null | grep -q "^$(UUID)$$"; then \
+			echo "State: DISABLED"; \
+		else \
+			echo "State: NOT LOADED IN CURRENT SESSION"; \
+		fi; \
+	fi
+
+pack: compile-schemas
+	@rm -f $(UUID).shell-extension.zip
+	gnome-extensions pack \
+		--force \
+		--extra-source=stylesheet.css \
+		--extra-source=icons \
+		--extra-source=services \
+		--extra-source=components \
+		--extra-source=helpers \
+		--extra-source=prefs \
+		--schema=schemas/org.gnome.shell.extensions.market-pulse.gschema.xml \
+		--out-dir=. .
+	@echo "Packaged extension bundle for release: $(UUID).shell-extension.zip"
+
+release: pack
 
 zip: compile-schemas
 	rm -f $(UUID).zip
@@ -44,4 +90,4 @@ lifecycle-test:
 	@echo "Now check: journalctl --since '2 min ago' -o cat /usr/bin/gnome-shell | grep market-pulse"
 
 clean:
-	rm -rf schemas/gschemas.compiled $(UUID).zip .synbuild
+	rm -rf schemas/gschemas.compiled $(UUID).zip $(UUID).shell-extension.zip .synbuild

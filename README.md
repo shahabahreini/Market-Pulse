@@ -68,20 +68,55 @@ Currency conversion is handled separately by **Frankfurter** (European Central B
 
 ---
 
-## Installation
+## Installation & Management
 
-### Manual Build & Installation
+### Build, Install & Reinstall
+
+Clone the repository and install directly to GNOME extensions directory:
 
 ```bash
 git clone https://github.com/shahabahreini/market-pulse-gnome-extension.git
 cd market-pulse-gnome-extension
+
+# Install the extension
 make install
+
+# Or reinstall (uninstalls previous copy, installs clean, and re-enables)
+make reinstall
 ```
 
-After installation, restart GNOME Shell (`Alt+F2` → `r` on X11, or log out on Wayland) and enable the extension:
+After first-time installation, restart GNOME Shell (`Alt+F2` → `r` on X11, or log out/in on Wayland) and enable the extension:
 
 ```bash
 gnome-extensions enable market-pulse@shahabahreini.github.com
+```
+
+### Checking Status
+
+Inspect whether the extension is installed, active, and loaded in your current shell session:
+
+```bash
+make status
+```
+
+### Packaging Release for GNOME Extensions (EGO)
+
+To generate the official release `.zip` bundle ready for upload to [extensions.gnome.org](https://extensions.gnome.org):
+
+```bash
+make release
+# or
+make pack
+```
+
+This creates `market-pulse@shahabahreini.github.com.shell-extension.zip` containing all required schemas, metadata, stylesheets, icons, and modules formatted according to GNOME extension packaging standards.
+
+### Uninstallation
+
+To cleanly remove the extension from your system:
+
+```bash
+make uninstall
 ```
 
 ---
