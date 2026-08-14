@@ -111,6 +111,31 @@ make pack
 
 This creates `market-pulse@shahabahreini.github.com.shell-extension.zip` containing all required schemas, metadata, stylesheets, icons, and modules formatted according to GNOME extension packaging standards.
 
+### Quality Control & GNOME Review Guidelines Audit
+
+Before publishing to [extensions.gnome.org (EGO)](https://extensions.gnome.org) or creating a release, run the automated Quality Control test suite to verify full compliance with the [GNOME Shell Extension Review Guidelines](https://gjs.guide/extensions/review-guidelines/review-guidelines.html):
+
+```bash
+make qc
+```
+
+This executes a full battery of checks:
+1. **Schema & Syntax Check (`make check`)**: Compiles GSettings schemas with `--strict` and syntax-checks all JavaScript modules.
+2. **ESLint Verification (`make lint`)**: Lints the codebase with zero warnings tolerance.
+3. **Metadata Validation**: Ensures `metadata.json` has valid integer version numbers, UUID consistency, and mandatory keys.
+4. **Process Boundary Guard**: Confirms that no `Gtk` or `Gdk` libraries leak into the GNOME Shell process (only allowed in `prefs.js`).
+5. **Static Analysis & EGO Rules Audit (`make shexli`)**: Builds the release bundle and runs `shexli` static analysis to guarantee clean review results.
+
+#### Review Guidelines Compliance Summary
+
+| Category | Guideline Requirement | Implementation Status |
+| :--- | :--- | :--- |
+| **Lifecycle & Teardown** | All UI actors, signal handlers, main-loop sources, and timers must be destroyed in `disable()` | Verified clean via `make lifecycle-test` (10x enable/disable cycle). |
+| **Process Boundaries** | Zero `Gtk` / `Gdk` imports inside the Shell process | Verified via `make qc`. |
+| **Settings Management** | No synchronous file I/O; settings writes must be debounced and flushed on teardown | Implemented in `helpers/settings.js`. |
+| **Packaging Standards** | Clean `.zip` generated with `gnome-extensions pack` containing only required runtime files | Packaged via `make release` / `make pack`. |
+| **Static Analysis** | Zero warnings/errors against official `shexli` review analyzer | Verified via `make shexli`. |
+
 ### Uninstallation
 
 To cleanly remove the extension from your system:

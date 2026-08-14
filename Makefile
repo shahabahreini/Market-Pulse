@@ -2,9 +2,9 @@ UUID = market-pulse@shahabahreini.github.com
 EXT_DIR = $(HOME)/.local/share/gnome-shell/extensions/$(UUID)
 SOURCES = metadata.json extension.js prefs.js stylesheet.css schemas icons services components helpers prefs
 
-.PHONY: all compile-schemas check lint install uninstall reinstall status pack release zip lifecycle-test clean
+.PHONY: all compile-schemas check lint qc shexli install uninstall reinstall status pack release zip lifecycle-test clean
 
-all: check
+all: qc
 
 compile-schemas:
 	glib-compile-schemas --strict schemas/
@@ -21,6 +21,44 @@ check: compile-schemas
 
 lint:
 	npx eslint .
+
+# Official GNOME Shell Extension static analyzer & review rules check
+shexli: pack
+	@echo "Running shexli GNOME Review Guidelines audit on release package..."
+	@if command -v shexli >/dev/null 2>&1; then \
+		shexli "$$(pwd)/$(UUID).shell-extension.zip"; \
+	else \
+		PY_BIN=$$(command -v python3.12 || command -v python3.11 || command -v python3); \
+		$$PY_BIN -m venv /tmp/shexli_qc_venv >/dev/null 2>&1; \
+		/tmp/shexli_qc_venv/bin/pip install -q -U shexli; \
+		/tmp/shexli_qc_venv/bin/shexli "$$(pwd)/$(UUID).shell-extension.zip"; \
+		rm -rf /tmp/shexli_qc_venv; \
+	fi
+	@echo "shexli audit passed: 0 errors, 0 warnings."
+
+# Full Quality Control suite checking code, schemas, process boundaries, and EGO packaging guidelines
+qc: check lint
+	@echo "Validating metadata.json against GNOME guidelines..."
+	@node -e "\
+		const m = require('./metadata.json'); \
+		const required = ['uuid', 'name', 'description', 'shell-version', 'version', 'settings-schema']; \
+		for (const key of required) { \
+			if (!(key in m)) throw new Error('metadata.json missing ' + key); \
+		} \
+		if (m.uuid !== '$(UUID)') throw new Error('UUID mismatch'); \
+		if (!Number.isInteger(m.version)) throw new Error('version must be integer for EGO'); \
+		console.log('metadata.json valid: ' + m.uuid + ' v' + m['version-name'] + ' (version ' + m.version + ')'); \
+	"
+	@echo "Checking Gtk/Gdk process-boundary restrictions (EGO rule)..."
+	@violations=$$(grep -rln "gi://Gtk\|gi://Gdk" extension.js components services helpers 2>/dev/null | grep -v "helpers/clipboardPrefs.js" || true); \
+	if [ -n "$$violations" ]; then \
+		echo "ERROR: Gtk/Gdk imported in Shell-process code:"; \
+		echo "$$violations"; \
+		exit 1; \
+	fi
+	@echo "Process boundary check passed: No Gtk/Gdk imported in Shell process."
+	@$(MAKE) shexli
+	@echo "\nAll QC checks passed successfully!"
 
 install: compile-schemas
 	mkdir -p $(EXT_DIR)

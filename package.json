@@ -8,6 +8,8 @@
     "lint": "eslint . --max-warnings 0",
     "check": "make check",
     "compile-schemas": "glib-compile-schemas --strict schemas/",
+    "qc": "make qc",
+    "shexli": "make shexli",
     "install": "make install",
     "reinstall": "make reinstall",
     "uninstall": "make uninstall",
