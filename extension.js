@@ -29,6 +29,7 @@ import { ThemeController } from './helpers/themeController.js';
 
 export default class MarketPulseExtension extends Extension {
     enable() {
+        this._settingsSignalIds = [];
         try {
             this._settings = new SettingsHelper(this);
             this._themeController = new ThemeController(this._settings, themeClass => {
@@ -89,17 +90,7 @@ export default class MarketPulseExtension extends Extension {
 
             // Integration preferences take effect immediately, so the user
             // never has to disable and re-enable the extension.
-            this._settings.connect('quick-settings-integration', () => this._syncQuickSettings());
-            this._settings.connect('search-provider-enabled', () => this._syncSearchProvider());
-            this._settings.connect('menu-shortcut-enabled', () => this._syncKeybinding());
-            this._settings.connect('menu-shortcut', () => this._syncKeybinding(true));
-            this._settings.connect('panel-position', () => this._syncPanelPosition());
-            this._settings.connect('active-portfolio', () => {
-                this._panelTicker?.onPortfolioChanged();
-                // Rows only exist while the menu is open.
-                if (this._panelTicker?.menu.isOpen) this._stocksMenu?.renderSymbolList();
-                this._scheduler?.triggerRefresh();
-            });
+            this._connectSettingsSignals();
 
             // Start Polling Loop
             this._scheduler.start();
@@ -109,8 +100,40 @@ export default class MarketPulseExtension extends Extension {
                 this._showOnboarding();
             }
         } catch (e) {
+            // enable() may fail after creating Shell resources; return the
+            // session to a clean state before reporting the exceptional error.
+            this.disable();
             console.error(`[market-pulse] Exception during enable(): ${e.message}\n${e.stack}`);
         }
+    }
+
+    _connectSettingsSignals() {
+        const signalIds = [
+            this._settings.connect('quick-settings-integration', () => this._syncQuickSettings()),
+            this._settings.connect('search-provider-enabled', () => this._syncSearchProvider()),
+            this._settings.connect('menu-shortcut-enabled', () => this._syncKeybinding()),
+            this._settings.connect('menu-shortcut', () => this._syncKeybinding(true)),
+            this._settings.connect('panel-position', () => this._syncPanelPosition()),
+            this._settings.connect('active-portfolio', () => {
+                this._panelTicker?.onPortfolioChanged();
+                // Rows only exist while the menu is open.
+                if (this._panelTicker?.menu.isOpen) this._stocksMenu?.renderSymbolList();
+                this._scheduler?.triggerRefresh();
+            })
+        ];
+        this._settingsSignalIds.push(...signalIds.filter(id => id !== null));
+    }
+
+    _disconnectSettingsSignals() {
+        if (!this._settingsSignalIds) return;
+        for (const signalId of this._settingsSignalIds) {
+            try {
+                this._settings?.disconnect(signalId);
+            } catch {
+                // Continue tearing down every remaining extension-owned signal.
+            }
+        }
+        this._settingsSignalIds = [];
     }
 
     // --- Optional integrations ---
@@ -123,9 +146,7 @@ export default class MarketPulseExtension extends Extension {
         if (wanted && !this._quickSettings) {
             try {
                 this._quickSettings = new QuickSettingsIndicator(this._scheduler);
-            } catch (e) {
-                console.warn(`[market-pulse] Quick Settings fallback: ${e.message}`);
-            }
+            } catch {}
         } else if (!wanted && this._quickSettings) {
             this._quickSettings.destroy();
             this._quickSettings = null;
@@ -171,9 +192,7 @@ export default class MarketPulseExtension extends Extension {
             const container = this._panelTicker.container;
             container.get_parent()?.remove_child(container);
             box.insert_child_at_index(container, position === 'right' ? 0 : box.get_n_children());
-        } catch (e) {
-            console.warn(`[market-pulse] Could not move panel indicator: ${e.message}`);
-        }
+        } catch {}
     }
 
     _registerSearchProvider() {
@@ -183,8 +202,8 @@ export default class MarketPulseExtension extends Extension {
                 this._panelTicker?.menu.open();
             });
             Main.overview.searchController.addProvider(this._searchProvider);
-        } catch (e) {
-            console.warn(`[market-pulse] Search provider unavailable: ${e.message}`);
+        } catch {
+            this._searchProvider?.destroy();
             this._searchProvider = null;
         }
     }
@@ -193,9 +212,7 @@ export default class MarketPulseExtension extends Extension {
         if (!this._searchProvider) return;
         try {
             Main.overview.searchController.removeProvider(this._searchProvider);
-        } catch (e) {
-            console.warn(`[market-pulse] Could not remove search provider: ${e.message}`);
-        }
+        } catch {}
         this._searchProvider.destroy();
         this._searchProvider = null;
     }
@@ -210,9 +227,7 @@ export default class MarketPulseExtension extends Extension {
                 () => this._panelTicker?.menu.toggle()
             );
             this._keybindingAdded = true;
-        } catch (e) {
-            console.warn(`[market-pulse] Could not register menu shortcut: ${e.message}`);
-        }
+        } catch {}
     }
 
     isWidgetOpen() {
@@ -246,8 +261,7 @@ export default class MarketPulseExtension extends Extension {
             });
             this._themeController?.applyTo(this._onboarding);
             this._onboarding.open();
-        } catch (e) {
-            console.error(`[market-pulse] Onboarding failed to open: ${e.message}`);
+        } catch {
             // Never trap the user in a broken first run.
             this._settings.setBoolean('first-run-complete', true);
         }
@@ -255,7 +269,10 @@ export default class MarketPulseExtension extends Extension {
 
     disable() {
         try {
-            // 0. Close transient UI first
+            // 0. Stop callbacks before tearing down their dependent services.
+            this._disconnectSettingsSignals();
+
+            // 1. Close transient UI first
             if (this._onboarding) {
                 this._onboarding.destroy();
                 this._onboarding = null;
@@ -266,32 +283,32 @@ export default class MarketPulseExtension extends Extension {
                 this._widgetSymbol = null;
             }
 
-            // 0b. Remove Shell integrations
+            // 2. Remove Shell integrations
             if (this._keybindingAdded) {
                 Main.wm.removeKeybinding('menu-shortcut');
                 this._keybindingAdded = false;
             }
             this._unregisterSearchProvider();
 
-            // 1. Destroy Quick Settings Indicator
+            // 3. Destroy Quick Settings Indicator
             if (this._quickSettings) {
                 this._quickSettings.destroy();
                 this._quickSettings = null;
             }
 
-            // 2. Destroy session alert engine
+            // 4. Destroy session alert engine
             if (this._alertEngine) {
                 this._alertEngine.destroy();
                 this._alertEngine = null;
             }
 
-            // 3. Stop and destroy polling scheduler
+            // 5. Stop and destroy polling scheduler
             if (this._scheduler) {
                 this._scheduler.destroy();
                 this._scheduler = null;
             }
 
-            // 4. Destroy popup menu
+            // 6. Destroy popup menu
             if (this._stocksMenu) {
                 this._stocksMenu.destroy();
                 this._stocksMenu = null;
@@ -302,32 +319,32 @@ export default class MarketPulseExtension extends Extension {
                 this._themeController = null;
             }
 
-            // 5. Destroy top bar panel button and clutter actors
+            // 7. Destroy top bar panel button and clutter actors
             if (this._panelTicker) {
                 this._panelTicker.destroy();
                 this._panelTicker = null;
             }
 
-            // 6. Tear down currency conversion
+            // 8. Tear down currency conversion
             Formatter.setFxService(null, null);
             if (this._fx) {
                 this._fx.destroy();
                 this._fx = null;
             }
 
-            // 7. Destroy provider registry (also aborts the shared Soup session)
+            // 9. Destroy provider registry (also aborts the shared Soup session)
             if (this._registry) {
                 this._registry.destroy();
                 this._registry = null;
             }
 
-            // 8. Save and destroy quote cache
+            // 10. Save and destroy quote cache
             if (this._cache) {
                 this._cache.destroy();
                 this._cache = null;
             }
 
-            // 9. Disconnect all GSettings signal handlers
+            // 11. Disconnect remaining helper-owned GSettings signal handlers
             if (this._settings) {
                 this._settings.destroy();
                 this._settings = null;

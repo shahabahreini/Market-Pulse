@@ -29,10 +29,11 @@ shexli: pack
 		shexli "$$(pwd)/$(UUID).shell-extension.zip"; \
 	else \
 		PY_BIN=$$(command -v python3.12 || command -v python3.11 || command -v python3); \
-		$$PY_BIN -m venv /tmp/shexli_qc_venv >/dev/null 2>&1; \
-		/tmp/shexli_qc_venv/bin/pip install -q -U shexli; \
-		/tmp/shexli_qc_venv/bin/shexli "$$(pwd)/$(UUID).shell-extension.zip"; \
-		rm -rf /tmp/shexli_qc_venv; \
+		SHEXLI_VENV=$$(mktemp -d); \
+		trap 'rm -rf "$$SHEXLI_VENV"' EXIT; \
+		$$PY_BIN -m venv "$$SHEXLI_VENV" >/dev/null 2>&1; \
+		"$$SHEXLI_VENV/bin/pip" install -q -U shexli; \
+		"$$SHEXLI_VENV/bin/shexli" "$$(pwd)/$(UUID).shell-extension.zip"; \
 	fi
 	@echo "shexli audit passed: 0 errors, 0 warnings."
 

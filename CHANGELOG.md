@@ -13,6 +13,12 @@ All notable changes to the Market Pulse GNOME Shell extension will be documented
 - Restored reliable quote refreshes after a network outage by safely coalescing a reconnect or manual refresh with any active poll.
 - Improved contrast and hover, pressed, selected, and focus states across the popup controls and Add Symbol dialog.
 
+## [1.0.1] — 2026-08-13
+
+### Fixed
+- Explicitly disconnect extension-owned GSettings signals during teardown and clean up partial initialization failures.
+- Reduced recoverable Shell-process logging and documented explicit local clipboard writes for GNOME extension review.
+
 ## [1.0.0] — 2026-08-13
 
 ### Added

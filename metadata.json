@@ -1,7 +1,7 @@
 {
   "uuid": "market-pulse@shahabahreini.github.com",
   "name": "Market Pulse",
-  "description": "Live stock & crypto quotes, panel ticker, interactive charts, session alerts, and local portfolio P&L tracking.",
+  "description": "Live stock & crypto quotes, panel ticker, interactive charts, session alerts, local portfolio P&L tracking, and explicit local copying of quote and portfolio data to the clipboard.",
   "shell-version": [
     "46",
     "47",
@@ -10,8 +10,8 @@
     "50"
   ],
   "url": "https://github.com/shahabahreini/market-pulse-gnome-extension",
-  "version": 1,
-  "version-name": "1.0.0",
+  "version": 2,
+  "version-name": "1.0.1",
   "settings-schema": "org.gnome.shell.extensions.market-pulse",
   "gettext-domain": "market-pulse"
 }

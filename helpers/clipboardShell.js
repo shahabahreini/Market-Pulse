@@ -8,8 +8,7 @@ export function copyToClipboard(text) {
     try {
         St.Clipboard.get_default().set_text(St.ClipboardType.CLIPBOARD, text);
         return true;
-    } catch (e) {
-        console.error(`[market-pulse] Clipboard copy error: ${e.message}`);
+    } catch {
         return false;
     }
 }

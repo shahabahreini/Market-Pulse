@@ -15,6 +15,7 @@
 - [Desktop & Shell Compatibility](#desktop--shell-compatibility)
 - [Data Providers](#data-providers)
 - [Appearance & Refresh Behavior](#appearance--refresh-behavior)
+- [Privacy & Clipboard](#privacy--clipboard)
 - [Installation](#installation)
 - [Frequently Asked Questions](#frequently-asked-questions-faq)
 - [Architecture](#architecture)
@@ -39,6 +40,10 @@
 Market Pulse supports **Follow System**, **Light**, and **Dark** appearances from Preferences → General. The selected theme is applied live to the dropdown, toolbar controls, symbol rows, desktop widget, and dialogs such as Add Symbol. Symbol rows are separated for easier scanning, and keyboard focus, hover, pressed, and disabled controls retain visible contrast in both themes.
 
 Quotes are fetched per symbol rather than on one global cadence. Crypto is refreshed at the active-market interval around the clock. Equities, ETFs, and indices use that interval during regular trading and the configured off-market interval during pre-market, after-hours, and closures. Use the refresh action to fetch all tracked symbols immediately.
+
+## Privacy & Clipboard
+
+Market Pulse stores portfolio data locally. The **Copy quote**, **Copy Portfolio JSON**, and **Copy Holdings CSV** controls write only the text selected by the user to the local system clipboard. The extension never reads clipboard contents or shares them with third parties.
 
 ---
 
@@ -146,11 +151,11 @@ make uninstall
 
 ### GitHub Releases & Automated Builds
 
-Pushing a version tag (e.g. `v1.0.0`) automatically triggers the release workflow to run linting, syntax verification, and package zip artifacts (`market-pulse-v<version>.shell-extension.zip` and standard UUID pack) attached directly to the GitHub Release:
+Pushing a version tag (e.g. `v1.0.1`) automatically triggers the release workflow to run linting, syntax verification, and package zip artifacts (`market-pulse-v<version>.shell-extension.zip` and standard UUID pack) attached directly to the GitHub Release:
 
 ```bash
-git tag v1.0.0
-git push origin v1.0.0
+git tag v1.0.1
+git push origin v1.0.1
 ```
 
 ---

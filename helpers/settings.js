@@ -37,8 +37,7 @@ export class SettingsHelper {
                 portfolios[id] = new Portfolio(p);
             }
             return portfolios;
-        } catch (e) {
-            console.error(`[market-pulse] Error parsing portfolios GSettings: ${e.message}`);
+        } catch {
             return {
                 'default': new Portfolio({
                     id: 'default',
@@ -72,9 +71,7 @@ export class SettingsHelper {
         if (!this._pendingPortfolios) return;
         try {
             this._settings.set_string('portfolios', JSON.stringify(this._pendingPortfolios));
-        } catch (e) {
-            console.error(`[market-pulse] Error saving portfolios: ${e.message}`);
-        }
+        } catch {}
         this._pendingPortfolios = null;
     }
 
@@ -244,9 +241,7 @@ export class SettingsHelper {
     saveAlertRules(rules) {
         try {
             this._settings.set_string('alert-rules', JSON.stringify(rules));
-        } catch (e) {
-            console.error(`[market-pulse] Error saving alert rules: ${e.message}`);
-        }
+        } catch {}
     }
 
     // --- General Properties ---
@@ -272,13 +267,11 @@ export class SettingsHelper {
      */
     get(key) {
         if (!this.hasKey(key)) {
-            console.warn(`[market-pulse] Setting '${key}' missing from installed schema — run 'make install'.`);
             return null;
         }
         try {
             return this._settings.get_value(key).recursiveUnpack();
-        } catch (e) {
-            console.error(`[market-pulse] Error reading setting '${key}': ${e.message}`);
+        } catch {
             return null;
         }
     }
@@ -300,19 +293,24 @@ export class SettingsHelper {
 
     _guardWrite(key) {
         if (this.hasKey(key)) return true;
-        console.warn(`[market-pulse] Dropped write to unknown setting '${key}' — run 'make install'.`);
         return false;
     }
 
     connect(key, callback) {
         // `changed::<key>` is a detailed signal; an undefined detail aborts too.
         if (!this.hasKey(key)) {
-            console.warn(`[market-pulse] Skipping watch on unknown setting '${key}' — run 'make install'.`);
             return null;
         }
         const signalId = this._settings.connect(`changed::${key}`, callback);
         this._signalIds.push(signalId);
         return signalId;
+    }
+
+    disconnect(signalId) {
+        const index = this._signalIds.indexOf(signalId);
+        if (index === -1) return;
+        this._signalIds.splice(index, 1);
+        this._settings.disconnect(signalId);
     }
 
     destroy() {
@@ -322,9 +320,8 @@ export class SettingsHelper {
         }
         // Never drop an in-flight edit on the floor.
         this._flushPortfolios();
-        for (const id of this._signalIds) {
-            this._settings.disconnect(id);
+        for (const id of [...this._signalIds]) {
+            this.disconnect(id);
         }
-        this._signalIds = [];
     }
 }

@@ -1,6 +1,6 @@
 {
   "name": "market-pulse-gnome-extension",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Market Pulse — live stock & crypto quotes, panel ticker, interactive charts, session alerts, and local portfolio P&L tracking for GNOME Shell.",
   "main": "extension.js",
   "type": "module",
