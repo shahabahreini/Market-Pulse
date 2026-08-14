@@ -17,7 +17,7 @@ All notable changes to the Market Pulse GNOME Shell extension will be documented
 
 ### Fixed
 - Explicitly disconnect extension-owned GSettings signals during teardown and clean up partial initialization failures.
-- Reduced recoverable Shell-process logging and documented explicit local clipboard writes for GNOME extension review.
+- Reduced recoverable Shell-process logging and documented button-only, write-only local clipboard access with no third-party sharing or clipboard shortcuts for GNOME extension review.
 
 ## [1.0.0] — 2026-08-13
 

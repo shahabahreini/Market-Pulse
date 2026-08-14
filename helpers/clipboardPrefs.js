@@ -6,13 +6,13 @@ import Gdk from 'gi://Gdk';
 
 export function copyToClipboard(text) {
     try {
+        // Called only by explicit export Copy buttons; clipboard data is never
+        // read or shared outside the local desktop session.
         const display = Gdk.Display.get_default();
         if (display) {
             display.get_clipboard().set(text);
             return true;
         }
-    } catch (e) {
-        console.error(`[market-pulse] Clipboard copy error: ${e.message}`);
-    }
+    } catch {}
     return false;
 }

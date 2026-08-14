@@ -1,7 +1,7 @@
 {
   "uuid": "market-pulse@shahabahreini.github.com",
   "name": "Market Pulse",
-  "description": "Live stock & crypto quotes, panel ticker, interactive charts, session alerts, local portfolio P&L tracking, and explicit local copying of quote and portfolio data to the clipboard.",
+  "description": "Live stock and crypto quotes, panel ticker, charts, alerts, and local portfolio P&L. It accesses the local clipboard only after the user selects Copy to write quote or portfolio-export text; it never reads clipboard data, shares it with third parties, or provides clipboard keyboard shortcuts.",
   "shell-version": [
     "46",
     "47",

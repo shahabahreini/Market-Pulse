@@ -43,7 +43,7 @@ Quotes are fetched per symbol rather than on one global cadence. Crypto is refre
 
 ## Privacy & Clipboard
 
-Market Pulse stores portfolio data locally. The **Copy quote**, **Copy Portfolio JSON**, and **Copy Holdings CSV** controls write only the text selected by the user to the local system clipboard. The extension never reads clipboard contents or shares them with third parties.
+Market Pulse stores portfolio data locally. The **Copy quote**, **Copy Portfolio JSON**, and **Copy Holdings CSV** controls write only the text selected by the user to the local system clipboard. The extension never reads clipboard contents, shares them with third parties, or provides keyboard shortcuts for clipboard actions.
 
 ---
 
