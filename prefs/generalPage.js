@@ -46,6 +46,21 @@ class GeneralPage extends Adw.PreferencesPage {
         });
         panelGroup.add(posRow);
 
+        const themeRow = new Adw.ComboRow({
+            title: 'Appearance',
+            subtitle: 'Use the GNOME appearance or choose a Market Pulse theme',
+            model: new Gtk.StringList({
+                strings: ['Follow System', 'Light', 'Dark']
+            })
+        });
+        const themeModes = ['system', 'light', 'dark'];
+        const themeMode = this._settings.get_string('theme-mode');
+        themeRow.set_selected(Math.max(0, themeModes.indexOf(themeMode)));
+        themeRow.connect('notify::selected', () => {
+            this._settings.set_string('theme-mode', themeModes[themeRow.get_selected()]);
+        });
+        panelGroup.add(themeRow);
+
         // Ticker Display Mode
         const modeRow = new Adw.ComboRow({
             title: 'Ticker Display Format',

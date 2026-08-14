@@ -27,6 +27,7 @@ export class StocksMenu {
         this._isOffline = false;
         this._signals = [];
         this._dialog = null;
+        this._themeClass = null;
 
         this._buildMenu();
 
@@ -52,6 +53,7 @@ export class StocksMenu {
 
     _buildMenu() {
         this._menu.removeAll();
+        this._menu.box.add_style_class_name('market-pulse-menu-surface');
         const headerSection = new PopupMenu.PopupMenuSection();
         const headerBox = new St.BoxLayout({
             orientation: Clutter.Orientation.HORIZONTAL,
@@ -190,6 +192,20 @@ export class StocksMenu {
 
         footerSection.actor.add_child(footerBox);
         this._menu.addMenuItem(footerSection);
+    }
+
+    /** Applies the resolved extension theme to this menu and its live dialog. */
+    setThemeClass(themeClass) {
+        this._themeClass = themeClass;
+        this._applyThemeClass(this._menu?.box);
+        this._applyThemeClass(this._dialog);
+    }
+
+    _applyThemeClass(actor) {
+        if (!actor || !this._themeClass) return;
+        actor.remove_style_class_name('market-pulse-theme-light');
+        actor.remove_style_class_name('market-pulse-theme-dark');
+        actor.add_style_class_name(this._themeClass);
     }
 
     /** Called by the extension whenever the desktop widget opens or closes. */
@@ -402,6 +418,13 @@ export class StocksMenu {
             });
 
             this._symbolBox.add_child(rowContainer);
+            if (index < symbols.length - 1) {
+                this._symbolBox.add_child(new St.Widget({
+                    style_class: 'market-pulse-symbol-separator',
+                    x_expand: true,
+                    height: 1
+                }));
+            }
         }
     }
 
@@ -492,6 +515,7 @@ export class StocksMenu {
     /** Tracks the dialog so destroy() can tear down one left open. */
     _openDialog(dialog) {
         this._dialog = dialog;
+        this._applyThemeClass(dialog);
         dialog.connect('closed', () => {
             if (this._dialog === dialog) this._dialog = null;
         });
@@ -527,5 +551,6 @@ export class StocksMenu {
         this._freshnessLabel = null;
         this._quotesMap = {};
         this._selectedSymbol = null;
+        this._themeClass = null;
     }
 }

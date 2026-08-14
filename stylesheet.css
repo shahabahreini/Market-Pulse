@@ -29,6 +29,17 @@
 
 /* --- Menu Chrome & Header --- */
 
+/* The Shell may use a light popup theme. Give the extension an intentional,
+ * theme-independent dark market surface so its controls keep sufficient
+ * contrast rather than relying on white translucent hover fills. */
+.market-pulse-menu-surface {
+    background-color: #20252c;
+    color: #f2f5f7;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.30);
+}
+
 .market-pulse-menu-header {
     padding: 10px 14px 8px 14px;
     spacing: 8px;
@@ -49,18 +60,18 @@
 }
 
 .market-pulse-icon-btn:hover {
-    background-color: rgba(255, 255, 255, 0.14);
-    border-color: rgba(255, 255, 255, 0.20);
+    background-color: rgba(126, 162, 196, 0.30);
+    border-color: rgba(180, 210, 235, 0.52);
 }
 
 .market-pulse-icon-btn:active {
-    background-color: rgba(255, 255, 255, 0.22);
-    border-color: rgba(255, 255, 255, 0.30);
+    background-color: rgba(103, 139, 174, 0.48);
+    border-color: rgba(204, 225, 242, 0.68);
 }
 
 .market-pulse-icon-btn.selected {
-    background-color: rgba(255, 255, 255, 0.18);
-    border-color: rgba(255, 255, 255, 0.26);
+    background-color: rgba(69, 123, 157, 0.56);
+    border-color: rgba(141, 197, 227, 0.70);
 }
 
 /* --- Summary Banner --- */
@@ -104,18 +115,18 @@
 }
 
 .market-pulse-popular-chip:hover {
-    background-color: rgba(255, 255, 255, 0.13);
-    border-color: rgba(255, 255, 255, 0.18);
+    background-color: rgba(126, 162, 196, 0.30);
+    border-color: rgba(180, 210, 235, 0.52);
 }
 
 .market-pulse-popular-chip:active {
-    background-color: rgba(255, 255, 255, 0.18);
-    border-color: rgba(255, 255, 255, 0.25);
+    background-color: rgba(103, 139, 174, 0.48);
+    border-color: rgba(204, 225, 242, 0.68);
 }
 
 .market-pulse-popular-chip.selected {
-    background-color: rgba(255, 255, 255, 0.20);
-    border-color: rgba(255, 255, 255, 0.26);
+    background-color: rgba(69, 123, 157, 0.56);
+    border-color: rgba(141, 197, 227, 0.70);
     font-weight: 600;
 }
 
@@ -130,6 +141,10 @@
     padding: 2px 0;
 }
 
+.market-pulse-symbol-separator {
+    margin: 3px 18px;
+}
+
 .market-pulse-symbol-row {
     padding: 7px 12px;
     border-radius: 10px;
@@ -140,13 +155,13 @@
 }
 
 .market-pulse-symbol-row:hover {
-    background-color: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.10);
+    background-color: rgba(126, 162, 196, 0.22);
+    border-color: rgba(180, 210, 235, 0.38);
 }
 
 .market-pulse-symbol-row:active {
-    background-color: rgba(255, 255, 255, 0.14);
-    border-color: rgba(255, 255, 255, 0.18);
+    background-color: rgba(103, 139, 174, 0.40);
+    border-color: rgba(204, 225, 242, 0.54);
 }
 
 .market-pulse-row-box {
@@ -247,13 +262,13 @@
 
 .market-pulse-row-more-btn:hover {
     opacity: 1;
-    background-color: rgba(255, 255, 255, 0.14);
-    border-color: rgba(255, 255, 255, 0.20);
+    background-color: rgba(126, 162, 196, 0.30);
+    border-color: rgba(180, 210, 235, 0.52);
 }
 
 .market-pulse-row-more-btn:active {
-    background-color: rgba(255, 255, 255, 0.22);
-    border-color: rgba(255, 255, 255, 0.30);
+    background-color: rgba(103, 139, 174, 0.48);
+    border-color: rgba(204, 225, 242, 0.68);
 }
 
 .market-pulse-row-actions {
@@ -274,13 +289,13 @@
 
 .market-pulse-action-idle:hover {
     opacity: 1;
-    background-color: rgba(255, 255, 255, 0.14);
-    border-color: rgba(255, 255, 255, 0.20);
+    background-color: rgba(126, 162, 196, 0.30);
+    border-color: rgba(180, 210, 235, 0.52);
 }
 
 .market-pulse-action-idle:active {
-    background-color: rgba(255, 255, 255, 0.22);
-    border-color: rgba(255, 255, 255, 0.30);
+    background-color: rgba(103, 139, 174, 0.48);
+    border-color: rgba(204, 225, 242, 0.68);
 }
 
 /* --- Detail View Card --- */
@@ -384,7 +399,80 @@
 /* --- Search & Modal Dialogs --- */
 
 .market-pulse-search-dialog {
+    background-color: #20252c;
+    color: #f2f5f7;
+    border: 1px solid rgba(255, 255, 255, 0.16);
     border-radius: 16px;
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.42);
+}
+
+.market-pulse-search-dialog .button {
+    background-color: #2b333d;
+    color: #f2f5f7;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    transition-duration: 180ms;
+}
+
+.market-pulse-search-dialog .button:hover {
+    background-color: #40566b;
+    border-color: rgba(180, 210, 235, 0.62);
+}
+
+.market-pulse-search-dialog .button:active {
+    background-color: #52718b;
+    border-color: rgba(220, 235, 247, 0.76);
+}
+
+/* Add Symbol is deliberately light, while the shared rename/confirmation
+ * dialog style above remains dark. Every interactive child gets a visible
+ * state on the pale surface rather than relying on translucent white. */
+.market-pulse-add-symbol-dialog {
+    background-color: #f8fafc;
+    color: #20252c;
+    border: 1px solid rgba(33, 45, 57, 0.18);
+    border-radius: 16px;
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.30);
+}
+
+.market-pulse-add-symbol-dialog .button,
+.market-pulse-add-symbol-dialog .market-pulse-popular-chip,
+.market-pulse-add-symbol-dialog .market-pulse-search-result-row {
+    background-color: #edf2f6;
+    color: #20252c;
+    border-color: rgba(43, 62, 79, 0.22);
+}
+
+.market-pulse-add-symbol-dialog .button:hover,
+.market-pulse-add-symbol-dialog .market-pulse-popular-chip:hover,
+.market-pulse-add-symbol-dialog .market-pulse-search-result-row:hover {
+    background-color: #d8e8f3;
+    border-color: #5e91b4;
+}
+
+.market-pulse-add-symbol-dialog .button:active,
+.market-pulse-add-symbol-dialog .market-pulse-popular-chip:active,
+.market-pulse-add-symbol-dialog .market-pulse-search-result-row:active {
+    background-color: #bdd6e7;
+    border-color: #3f769d;
+}
+
+.market-pulse-add-symbol-dialog .market-pulse-search-entry {
+    background-color: #ffffff;
+    color: #20252c;
+    border-color: rgba(43, 62, 79, 0.30);
+}
+
+.market-pulse-add-symbol-dialog .market-pulse-search-entry:focus {
+    background-color: #ffffff;
+    border-color: #3f769d;
+}
+
+.market-pulse-add-symbol-dialog .market-pulse-section-header,
+.market-pulse-add-symbol-dialog .market-pulse-recent-label,
+.market-pulse-add-symbol-dialog .market-pulse-loading-label,
+.market-pulse-add-symbol-dialog .market-pulse-empty-search-label {
+    color: #334155;
+    opacity: 1;
 }
 
 .market-pulse-dialog-title {
@@ -398,14 +486,14 @@
     margin-bottom: 12px;
     border-radius: 10px;
     padding: 8px 12px;
-    background-color: rgba(255, 255, 255, 0.07);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background-color: #161b21;
+    border: 1px solid rgba(190, 214, 234, 0.28);
     transition-duration: 180ms;
 }
 
 .market-pulse-search-entry:focus {
-    border-color: rgba(255, 255, 255, 0.28);
-    background-color: rgba(255, 255, 255, 0.11);
+    border-color: rgba(141, 197, 227, 0.90);
+    background-color: #1d2731;
 }
 
 .market-pulse-suggestions-box {
@@ -439,13 +527,13 @@
 }
 
 .market-pulse-search-result-row:hover {
-    background-color: rgba(255, 255, 255, 0.10);
-    border-color: rgba(255, 255, 255, 0.14);
+    background-color: rgba(126, 162, 196, 0.30);
+    border-color: rgba(180, 210, 235, 0.52);
 }
 
 .market-pulse-search-result-row:active {
-    background-color: rgba(255, 255, 255, 0.16);
-    border-color: rgba(255, 255, 255, 0.22);
+    background-color: rgba(103, 139, 174, 0.48);
+    border-color: rgba(204, 225, 242, 0.68);
 }
 
 .market-pulse-search-result-box {
@@ -658,6 +746,200 @@
     font-size: 18px;
     font-weight: 600;
     letter-spacing: 0.2px;
+}
+
+/* --- Resolved extension themes ---
+ *
+ * GNOME Shell may use a different foreground color than its popup background.
+ * Every extension surface therefore carries one resolved theme class rather
+ * than relying on inherited Shell colors for labels and symbolic icons.
+ */
+
+.market-pulse-theme-dark.market-pulse-menu-surface,
+.market-pulse-theme-dark.market-pulse-search-dialog,
+.market-pulse-theme-dark.market-pulse-add-symbol-dialog,
+.market-pulse-theme-dark.market-pulse-onboarding-dialog,
+.market-pulse-theme-dark.market-pulse-widget-window {
+    background-color: #202831;
+    color: #f4f7fb;
+    border-color: #526170;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.42);
+}
+
+.market-pulse-theme-light.market-pulse-menu-surface,
+.market-pulse-theme-light.market-pulse-search-dialog,
+.market-pulse-theme-light.market-pulse-add-symbol-dialog,
+.market-pulse-theme-light.market-pulse-onboarding-dialog,
+.market-pulse-theme-light.market-pulse-widget-window {
+    background-color: #f8fafc;
+    color: #17212b;
+    border-color: #bcc8d3;
+    box-shadow: 0 12px 28px rgba(33, 52, 70, 0.18);
+}
+
+.market-pulse-theme-dark .popup-menu-icon,
+.market-pulse-theme-dark .market-pulse-menu-title,
+.market-pulse-theme-dark .market-pulse-widget-title,
+.market-pulse-theme-dark .market-pulse-widget-price,
+.market-pulse-theme-dark .market-pulse-row-sym,
+.market-pulse-theme-dark .market-pulse-row-price,
+.market-pulse-theme-dark .market-pulse-search-result-name,
+.market-pulse-theme-dark .market-pulse-dialog-title {
+    color: #f4f7fb;
+}
+
+.market-pulse-theme-light .popup-menu-icon,
+.market-pulse-theme-light .market-pulse-menu-title,
+.market-pulse-theme-light .market-pulse-widget-title,
+.market-pulse-theme-light .market-pulse-widget-price,
+.market-pulse-theme-light .market-pulse-row-sym,
+.market-pulse-theme-light .market-pulse-row-price,
+.market-pulse-theme-light .market-pulse-search-result-name,
+.market-pulse-theme-light .market-pulse-dialog-title {
+    color: #17212b;
+}
+
+.market-pulse-theme-dark .market-pulse-symbol-separator {
+    background-color: rgba(194, 210, 224, 0.22);
+}
+
+.market-pulse-theme-light .market-pulse-symbol-separator {
+    background-color: rgba(49, 70, 89, 0.22);
+}
+
+.market-pulse-theme-dark .market-pulse-summary-banner,
+.market-pulse-theme-dark .market-pulse-detail-view,
+.market-pulse-theme-dark .market-pulse-tf-box,
+.market-pulse-theme-dark .market-pulse-status-badge,
+.market-pulse-theme-dark .market-pulse-detail-notice {
+    background-color: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: #e6edf4;
+}
+
+.market-pulse-theme-light .market-pulse-summary-banner,
+.market-pulse-theme-light .market-pulse-detail-view,
+.market-pulse-theme-light .market-pulse-tf-box,
+.market-pulse-theme-light .market-pulse-status-badge,
+.market-pulse-theme-light .market-pulse-detail-notice {
+    background-color: #eef3f7;
+    border-color: #c8d3dc;
+    color: #283946;
+}
+
+.market-pulse-theme-dark .market-pulse-icon-btn,
+.market-pulse-theme-dark .market-pulse-popular-chip,
+.market-pulse-theme-dark .market-pulse-search-result-row,
+.market-pulse-theme-dark .market-pulse-settings-link-btn,
+.market-pulse-theme-dark .market-pulse-tf-btn,
+.market-pulse-theme-dark .market-pulse-preset-row,
+.market-pulse-theme-dark .button {
+    color: #f4f7fb;
+    background-color: rgba(255, 255, 255, 0.06);
+    border-color: rgba(214, 227, 239, 0.18);
+}
+
+.market-pulse-theme-light .market-pulse-icon-btn,
+.market-pulse-theme-light .market-pulse-popular-chip,
+.market-pulse-theme-light .market-pulse-search-result-row,
+.market-pulse-theme-light .market-pulse-settings-link-btn,
+.market-pulse-theme-light .market-pulse-tf-btn,
+.market-pulse-theme-light .market-pulse-preset-row,
+.market-pulse-theme-light .button {
+    color: #17212b;
+    background-color: #e8eef3;
+    border-color: #aebdca;
+}
+
+.market-pulse-theme-dark .market-pulse-icon-btn:hover,
+.market-pulse-theme-dark .market-pulse-popular-chip:hover,
+.market-pulse-theme-dark .market-pulse-search-result-row:hover,
+.market-pulse-theme-dark .market-pulse-settings-link-btn:hover,
+.market-pulse-theme-dark .market-pulse-tf-btn:hover,
+.market-pulse-theme-dark .market-pulse-preset-row:hover,
+.market-pulse-theme-dark .button:hover {
+    background-color: #3a5368;
+    border-color: #a5c7de;
+}
+
+.market-pulse-theme-light .market-pulse-icon-btn:hover,
+.market-pulse-theme-light .market-pulse-popular-chip:hover,
+.market-pulse-theme-light .market-pulse-search-result-row:hover,
+.market-pulse-theme-light .market-pulse-settings-link-btn:hover,
+.market-pulse-theme-light .market-pulse-tf-btn:hover,
+.market-pulse-theme-light .market-pulse-preset-row:hover,
+.market-pulse-theme-light .button:hover {
+    background-color: #d1e4f1;
+    border-color: #4a7fa4;
+}
+
+.market-pulse-theme-dark .market-pulse-icon-btn:active,
+.market-pulse-theme-dark .market-pulse-popular-chip:active,
+.market-pulse-theme-dark .market-pulse-search-result-row:active,
+.market-pulse-theme-dark .market-pulse-settings-link-btn:active,
+.market-pulse-theme-dark .market-pulse-tf-btn:active,
+.market-pulse-theme-dark .market-pulse-preset-row:active,
+.market-pulse-theme-dark .button:active {
+    background-color: #506f88;
+    border-color: #d4e5f0;
+}
+
+.market-pulse-theme-light .market-pulse-icon-btn:active,
+.market-pulse-theme-light .market-pulse-popular-chip:active,
+.market-pulse-theme-light .market-pulse-search-result-row:active,
+.market-pulse-theme-light .market-pulse-settings-link-btn:active,
+.market-pulse-theme-light .market-pulse-tf-btn:active,
+.market-pulse-theme-light .market-pulse-preset-row:active,
+.market-pulse-theme-light .button:active {
+    background-color: #b8d4e6;
+    border-color: #2f668e;
+}
+
+.market-pulse-theme-dark .market-pulse-search-entry {
+    color: #f4f7fb;
+    background-color: #161d24;
+    border-color: #728698;
+}
+
+.market-pulse-theme-light .market-pulse-search-entry {
+    color: #17212b;
+    background-color: #ffffff;
+    border-color: #8ea1b2;
+}
+
+.market-pulse-theme-dark .market-pulse-search-entry:focus,
+.market-pulse-theme-light .market-pulse-search-entry:focus {
+    border-color: #4b91bd;
+}
+
+.market-pulse-theme-dark .market-pulse-section-header,
+.market-pulse-theme-dark .market-pulse-row-desc,
+.market-pulse-theme-dark .market-pulse-freshness-label,
+.market-pulse-theme-dark .market-pulse-preset-desc,
+.market-pulse-theme-dark .market-pulse-onboarding-body {
+    color: #c4d0db;
+    opacity: 1;
+}
+
+.market-pulse-theme-light .market-pulse-section-header,
+.market-pulse-theme-light .market-pulse-row-desc,
+.market-pulse-theme-light .market-pulse-freshness-label,
+.market-pulse-theme-light .market-pulse-preset-desc,
+.market-pulse-theme-light .market-pulse-onboarding-body {
+    color: #526474;
+    opacity: 1;
+}
+
+.market-pulse-theme-light .chip-green {
+    color: #176747;
+    background-color: #d8f1e4;
+    border-color: #76bc99;
+}
+
+.market-pulse-theme-light .chip-red {
+    color: #a33636;
+    background-color: #f9dfdf;
+    border-color: #df9292;
 }
 
 /* --- Keyboard focus & disabled states ---

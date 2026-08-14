@@ -13,6 +13,12 @@
     <value value="3" nick="change-abs"/>
   </enum>
 
+  <enum id="org.gnome.shell.extensions.market-pulse.theme-mode">
+    <value value="0" nick="system"/>
+    <value value="1" nick="light"/>
+    <value value="2" nick="dark"/>
+  </enum>
+
   <schema id="org.gnome.shell.extensions.market-pulse" path="/org/gnome/shell/extensions/market-pulse/">
     
     <key name="active-portfolio" type="s">
@@ -37,6 +43,12 @@
       <default>'right'</default>
       <summary>Panel Position</summary>
       <description>Location of the extension indicator on the GNOME Shell top panel.</description>
+    </key>
+
+    <key name="theme-mode" enum="org.gnome.shell.extensions.market-pulse.theme-mode">
+      <default>'system'</default>
+      <summary>Extension Color Theme</summary>
+      <description>Use the GNOME appearance or force a light or dark Market Pulse theme.</description>
     </key>
 
     <key name="ticker-cycling-enabled" type="b">

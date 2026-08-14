@@ -2,6 +2,17 @@
 
 All notable changes to the Market Pulse GNOME Shell extension will be documented in this file.
 
+## [Unreleased]
+
+### Added
+- Light, Dark, and Follow System extension appearances with live updates across the menu, desktop widget, and dialogs.
+- Theme-aware separators between tracked-symbol rows.
+- Per-symbol market-aware polling: crypto remains live 24/7 while closed-market instruments use the off-market interval.
+
+### Fixed
+- Restored reliable quote refreshes after a network outage by safely coalescing a reconnect or manual refresh with any active poll.
+- Improved contrast and hover, pressed, selected, and focus states across the popup controls and Add Symbol dialog.
+
 ## [1.0.0] — 2026-08-13
 
 ### Added

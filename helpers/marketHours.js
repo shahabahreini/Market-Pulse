@@ -3,14 +3,21 @@
  */
 
 export class MarketHours {
-    static isCrypto(symbol) {
+    static isCrypto(symbolObj) {
+        if (!symbolObj) return false;
+        if (typeof symbolObj === 'object' && symbolObj.type?.toLowerCase() === 'crypto') return true;
+
+        // Legacy saved entries did not always persist an asset type. Keep the
+        // prior heuristic as a compatibility fallback, never as the primary
+        // classification for newly added symbols.
+        const symbol = typeof symbolObj === 'string' ? symbolObj : symbolObj.symbol;
         if (!symbol) return false;
         const upper = symbol.toUpperCase();
         return upper.endsWith('-USD') || upper.endsWith('-EUR') || upper.endsWith('USDT') || upper.includes('BTC') || upper.includes('ETH');
     }
 
-    static getMarketStatus(symbol, quoteState = null) {
-        if (MarketHours.isCrypto(symbol)) {
+    static getMarketStatus(symbolObj, quoteState = null) {
+        if (MarketHours.isCrypto(symbolObj)) {
             return { state: '24/7', isOpen: true, label: '24/7 Market' };
         }
 

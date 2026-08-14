@@ -205,7 +205,7 @@ class DetailView extends St.BoxLayout {
             return;
         }
 
-        const mStatus = MarketHours.getMarketStatus(symbolObj.symbol, quote.marketState);
+        const mStatus = MarketHours.getMarketStatus(symbolObj, quote.marketState);
         this._titleLabel.set_text(`${symbolObj.displayLabel} (${quote.symbol})`);
         this._marketStatusBadge.set_text(mStatus.label);
 

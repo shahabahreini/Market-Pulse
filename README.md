@@ -9,16 +9,36 @@
 
 ---
 
+## Contents
+
+- [Key Features](#key-features)
+- [Desktop & Shell Compatibility](#desktop--shell-compatibility)
+- [Data Providers](#data-providers)
+- [Appearance & Refresh Behavior](#appearance--refresh-behavior)
+- [Installation](#installation)
+- [Frequently Asked Questions](#frequently-asked-questions-faq)
+- [Architecture](#architecture)
+- [Credits & Attribution](#credits--attribution)
+- [License](#license)
+
+---
+
 ## Key Features
 
 - **Top Bar Panel Ticker**: Glanceable live quote rotation in the GNOME panel with pause-on-hover, pin-to-panel right-click option, middle-click manual refresh, and customizable display formats (Price, Change %, Absolute Change, Price + %).
 - **Live Multi-Provider Symbol Search**: Search equities, ETFs, global indices, and cryptocurrencies (e.g. `AAPL`, `MSFT`, `BTC-USD`, `ETH-USD`, `^GSPC`) directly within GNOME Shell in <3 clicks.
 - **Interactive Cairo Charting**: Intraday, 1-month, 6-month, 1-year, and 5-year trend line canvas with low-saturation color palettes and smooth ease-out transitions.
-- **Multi-Provider Data Resilience**: Per-symbol automatic failover across free, keyless providers (**Yahoo Finance**, **Eastmoney**, **CoinGecko**, **Binance**), with **Frankfurter ECB rates** for currency conversion. When a provider fails, the row shows which one answered instead — never a silent stale price.
+- **Multi-Provider Data Resilience**: Per-symbol automatic failover across free, keyless providers (**Yahoo Finance**, **Eastmoney**, **CoinGecko**, **Binance**), with **Frankfurter ECB rates** for currency conversion. Cached prices remain visible offline, and polling resumes immediately once GNOME reports connectivity restored.
 - **Session-Bound Price Alerts**: Native GNOME desktop notifications for target prices and surge/decline thresholds. Silent notifications without audio disruptors and configurable quiet hours.
 - **Local Portfolio & P&L Tracking**: Calculate total portfolio value, daily change, and overall gains locally. Stored exclusively on device with an instant "hide values" privacy toggle for screen sharing.
 - **Desktop Integration**: Overview search results for tracked symbols, a Quick Settings pause toggle, an optional `Super+M` menu shortcut, and a detachable always-on-top chart widget.
 - **Libadwaita Preferences Window**: HIG-compliant `Adw.PreferencesWindow` with General, Portfolios, Providers multi-select, Alerts, and About settings pages.
+
+## Appearance & Refresh Behavior
+
+Market Pulse supports **Follow System**, **Light**, and **Dark** appearances from Preferences → General. The selected theme is applied live to the dropdown, toolbar controls, symbol rows, desktop widget, and dialogs such as Add Symbol. Symbol rows are separated for easier scanning, and keyboard focus, hover, pressed, and disabled controls retain visible contrast in both themes.
+
+Quotes are fetched per symbol rather than on one global cadence. Crypto is refreshed at the active-market interval around the clock. Equities, ETFs, and indices use that interval during regular trading and the configured off-market interval during pre-market, after-hours, and closures. Use the refresh action to fetch all tracked symbols immediately.
 
 ---
 
@@ -95,7 +115,7 @@ Market Pulse ships with built-in adapters for Yahoo Finance, Eastmoney (China ma
 | `helpers/models.js` | `SymbolData`, `Quote`, `Holding`, `Portfolio`, `AlertRule`. Remote JSON is normalised into these before use. |
 | `services/quoteProvider.js` | `BaseQuoteProvider` (shared `Soup.Session`, HTTP helpers) and `ProviderRegistry` (per-symbol failover chain). |
 | `services/providers/*.js` | One adapter per source. Adding a provider is a single new file plus one `register()` call. |
-| `services/pollingScheduler.js` | Single timer. Chooses the interval from market hours, backs off on HTTP 429, suspends when locked, offline, or on battery. |
+| `services/pollingScheduler.js` | Per-symbol scheduler. Uses market-aware cadence, keeps crypto live 24/7, backs off on HTTP 429, and suspends when locked, offline, or on battery. |
 | `services/quoteCache.js` | In-memory quotes plus an async JSON mirror in the cache directory for offline grace. |
 | `components/*.js` | St/Clutter UI. `chart.js` and `sparkline.js` draw with Cairo. |
 | `prefs/*.js` | Libadwaita pages. Runs in a separate process; this is the only place Gtk/Gdk may be imported. |

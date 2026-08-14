@@ -15,7 +15,7 @@ import { PRESETS } from '../helpers/presets.js';
 export const SymbolSearchDialog = GObject.registerClass(
 class SymbolSearchDialog extends ModalDialog.ModalDialog {
     _init(settingsHelper, providerRegistry, onSymbolAddedCallback) {
-        super._init({ styleClass: 'market-pulse-search-dialog' });
+        super._init({ styleClass: 'market-pulse-add-symbol-dialog' });
 
         this._settingsHelper = settingsHelper;
         this._registry = providerRegistry;
@@ -89,6 +89,8 @@ class SymbolSearchDialog extends ModalDialog.ModalDialog {
                 label: item.sym,
                 style_class: 'button market-pulse-popular-chip',
                 accessible_name: `Add ${item.name}`,
+                track_hover: true,
+                reactive: true,
                 can_focus: true
             });
             btn.connect('clicked', () => {
@@ -113,6 +115,8 @@ class SymbolSearchDialog extends ModalDialog.ModalDialog {
                 label: preset.label,
                 style_class: 'button market-pulse-popular-chip',
                 accessible_name: `Add ${preset.label}: ${preset.description}`,
+                track_hover: true,
+                reactive: true,
                 can_focus: true
             });
             btn.connect('clicked', () => this._addPreset(preset));
@@ -137,6 +141,8 @@ class SymbolSearchDialog extends ModalDialog.ModalDialog {
                     label: query,
                     style_class: 'button market-pulse-popular-chip',
                     accessible_name: `Search again for ${query}`,
+                    track_hover: true,
+                    reactive: true,
                     can_focus: true
                 });
                 btn.connect('clicked', () => {
@@ -226,6 +232,8 @@ class SymbolSearchDialog extends ModalDialog.ModalDialog {
                 style_class: 'button market-pulse-search-result-row',
                 accessible_name: `Add ${ticker} without a search match`,
                 x_expand: true,
+                track_hover: true,
+                reactive: true,
                 can_focus: true
             });
             manualBtn.connect('clicked', () => {
@@ -241,7 +249,12 @@ class SymbolSearchDialog extends ModalDialog.ModalDialog {
         }
 
         for (const item of results.slice(0, 10)) {
-            const rowBtn = new St.Button({ style_class: 'button market-pulse-search-result-row', can_focus: true });
+            const rowBtn = new St.Button({
+                style_class: 'button market-pulse-search-result-row',
+                track_hover: true,
+                reactive: true,
+                can_focus: true
+            });
             const rowBox = new St.BoxLayout({ orientation: Clutter.Orientation.HORIZONTAL, style_class: 'market-pulse-search-result-box' });
 
             const nameLabel = new St.Label({

@@ -25,11 +25,17 @@ import { OnboardingDialog } from './components/onboardingDialog.js';
 import { MarketPulseSearchProvider } from './services/searchProvider.js';
 import { Formatter } from './helpers/formatter.js';
 import { symbolicGIcon } from './helpers/icons.js';
+import { ThemeController } from './helpers/themeController.js';
 
 export default class MarketPulseExtension extends Extension {
     enable() {
         try {
             this._settings = new SettingsHelper(this);
+            this._themeController = new ThemeController(this._settings, themeClass => {
+                this._stocksMenu?.setThemeClass(themeClass);
+                this._themeController?.applyTo(this._widget);
+                this._themeController?.applyTo(this._onboarding);
+            });
             this._cache = new QuoteCache();
 
             // Initialize Multi-Provider Registry
@@ -75,6 +81,7 @@ export default class MarketPulseExtension extends Extension {
                 this._scheduler,
                 this._registry
             );
+            this._stocksMenu.setThemeClass(this._themeController.themeClass);
 
             this._syncQuickSettings();
             this._syncSearchProvider();
@@ -225,6 +232,7 @@ export default class MarketPulseExtension extends Extension {
 
         this._widgetSymbol = symbolObj;
         this._widget = new WidgetWindow(this._settings, this._registry);
+        this._themeController?.applyTo(this._widget);
         this._widget.setCloseHandler(() => this.toggleWidget(null));
         this._widget.show(symbolObj, this._cache.get(symbolObj.symbol));
         this._stocksMenu?.syncWidgetState();
@@ -236,6 +244,7 @@ export default class MarketPulseExtension extends Extension {
                 this._onboarding = null;
                 this._scheduler?.triggerRefresh();
             });
+            this._themeController?.applyTo(this._onboarding);
             this._onboarding.open();
         } catch (e) {
             console.error(`[market-pulse] Onboarding failed to open: ${e.message}`);
@@ -286,6 +295,11 @@ export default class MarketPulseExtension extends Extension {
             if (this._stocksMenu) {
                 this._stocksMenu.destroy();
                 this._stocksMenu = null;
+            }
+
+            if (this._themeController) {
+                this._themeController.destroy();
+                this._themeController = null;
             }
 
             // 5. Destroy top bar panel button and clutter actors

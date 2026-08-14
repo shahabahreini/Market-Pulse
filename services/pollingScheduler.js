@@ -22,6 +22,10 @@ export class PollingScheduler {
         this._isPaused = false;
         this._cancellable = null;
         this._polling = false;
+        this._refreshPending = false;
+        this._forceRefresh = false;
+        this._destroyed = false;
+        this._lastFetchedAt = new Map();
         this._onBattery = false;
         this._upowerProxy = null;
         this._upowerSignalId = null;
@@ -109,6 +113,7 @@ export class PollingScheduler {
 
     pause() {
         this._isPaused = true;
+        this._refreshPending = false;
         this.stop();
     }
 
@@ -118,23 +123,31 @@ export class PollingScheduler {
     }
 
     triggerRefresh() {
-        this.stop();
+        if (this._destroyed || this._isPaused) return;
+
+        this._forceRefresh = true;
+
+        // A new timer would return immediately while the cancelled poll still
+        // owns the scheduler. Let that poll's finally block start one precise
+        // replacement instead. This is especially important after GNOME
+        // reports that a previously offline network is available again.
+        if (this._polling) {
+            this._refreshPending = true;
+            this._cancellable?.cancel();
+            return;
+        }
+
         this.scheduleNextPoll(0);
     }
 
     scheduleNextPoll(delaySeconds = null) {
         this.stop();
-        if (this._isPaused) return;
+        if (this._destroyed || this._isPaused) return;
 
         let interval = delaySeconds;
         if (interval === null) {
             const portfolio = this._settingsHelper.getActivePortfolio();
-            const hasOpenSymbol = portfolio.symbols.some(s => MarketHours.getMarketStatus(s.symbol).isOpen);
-
-            const marketInterval = this._settingsHelper.get('market-polling-interval') || 30;
-            const offMarketInterval = this._settingsHelper.get('off-market-polling-interval') || 900;
-
-            interval = (hasOpenSymbol ? marketInterval : offMarketInterval) * this._backoffFactor;
+            interval = this._secondsUntilNextDue(portfolio.symbols);
         }
 
         this._timeoutId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, Math.max(1, interval), () => {
@@ -148,7 +161,7 @@ export class PollingScheduler {
     }
 
     async _pollQuotes() {
-        if (this._polling) return;
+        if (this._destroyed || this._polling) return;
 
         if (this._isSuspended()) {
             // Re-check on the off-hours cadence rather than spinning.
@@ -168,6 +181,14 @@ export class PollingScheduler {
             return;
         }
 
+        const forceRefresh = this._forceRefresh;
+        this._forceRefresh = false;
+        const dueSymbols = portfolio.symbols.filter(symbolObj => forceRefresh || this._isDue(symbolObj));
+        if (dueSymbols.length === 0) {
+            this.scheduleNextPoll();
+            return;
+        }
+
         this._polling = true;
         this._cancellable = new Gio.Cancellable();
         const cancellable = this._cancellable;
@@ -178,7 +199,7 @@ export class PollingScheduler {
         const fetchedMap = {};
 
         try {
-            for (const symObj of portfolio.symbols) {
+            for (const symObj of dueSymbols) {
                 if (cancellable.is_cancelled()) break;
 
                 const chain = this._registry.getChainForSymbol(symObj, enabledIds);
@@ -204,6 +225,7 @@ export class PollingScheduler {
 
                 if (quote) {
                     fetchedMap[symObj.symbol] = quote;
+                    this._lastFetchedAt.set(symObj.symbol, Date.now());
                     fetchedAny = true;
                 } else {
                     // Keep the last good value visible, flagged with its error.
@@ -224,6 +246,8 @@ export class PollingScheduler {
             if (this._cancellable === cancellable) this._cancellable = null;
         }
 
+        if (this._destroyed) return;
+
         if (rateLimited) {
             this._backoffFactor = Math.min(this._backoffFactor * 2, 8);
             console.warn(`[market-pulse] Rate limited; backoff factor now ${this._backoffFactor}.`);
@@ -236,7 +260,12 @@ export class PollingScheduler {
             this._emitCached({ offline: false });
         }
 
-        this.scheduleNextPoll();
+        if (this._refreshPending) {
+            this._refreshPending = false;
+            this.scheduleNextPoll(0);
+        } else {
+            this.scheduleNextPoll();
+        }
     }
 
     _emitCached(state) {
@@ -245,7 +274,38 @@ export class PollingScheduler {
         }
     }
 
+    /** Poll cadence is calculated per saved symbol, not per portfolio. */
+    _intervalForSymbol(symbolObj) {
+        const quote = this._cache.get(symbolObj.symbol);
+        const status = MarketHours.getMarketStatus(symbolObj, quote?.marketState);
+        const baseInterval = status.isOpen
+            ? (this._settingsHelper.get('market-polling-interval') || 30)
+            : (this._settingsHelper.get('off-market-polling-interval') || 900);
+        return baseInterval * this._backoffFactor;
+    }
+
+    _isDue(symbolObj, now = Date.now()) {
+        const lastFetchedAt = this._lastFetchedAt.get(symbolObj.symbol);
+        return !lastFetchedAt || now - lastFetchedAt >= this._intervalForSymbol(symbolObj) * 1000;
+    }
+
+    _secondsUntilNextDue(symbols) {
+        if (symbols.length === 0) return 60;
+        const now = Date.now();
+        let shortestDelayMs = Infinity;
+        for (const symbolObj of symbols) {
+            const lastFetchedAt = this._lastFetchedAt.get(symbolObj.symbol);
+            if (!lastFetchedAt) return 0;
+            const dueAt = lastFetchedAt + this._intervalForSymbol(symbolObj) * 1000;
+            shortestDelayMs = Math.min(shortestDelayMs, dueAt - now);
+        }
+        return Math.max(1, Math.ceil(shortestDelayMs / 1000));
+    }
+
     destroy() {
+        this._destroyed = true;
+        this._refreshPending = false;
+        this._forceRefresh = false;
         this.stop();
 
         if (this._networkSignalId) {
@@ -262,6 +322,7 @@ export class PollingScheduler {
         }
 
         this._upowerProxy = null;
+        this._lastFetchedAt.clear();
         this._onQuotesUpdated = null;
     }
 }
