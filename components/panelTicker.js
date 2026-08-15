@@ -41,6 +41,8 @@ class PanelTicker extends PanelMenu.Button {
         });
         // Without this a long instrument name stretches the panel indefinitely
         this._label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+        this._label.clutter_text.use_markup = true;
+        this._currentMarkup = '';
         this._box.add_child(this._label);
 
         this._pinIcon = new St.Icon({
@@ -51,6 +53,15 @@ class PanelTicker extends PanelMenu.Button {
         this._box.add_child(this._pinIcon);
 
         this.add_child(this._box);
+
+        this._settingsSignalIds = [
+            this._settingsHelper.connect('colorblind-mode', () => this.refreshDisplay()),
+            this._settingsHelper.connect('ticker-mode', () => this.refreshDisplay()),
+            this._settingsHelper.connect('hide-private-values', () => this.refreshDisplay()),
+            this._settingsHelper.connect('symbol-display-overrides', () => this.refreshDisplay()),
+            this._settingsHelper.connect('ticker-interval', () => this.startTickerTimer()),
+            this._settingsHelper.connect('ticker-cycling-enabled', () => this.startTickerTimer())
+        ].filter(id => id !== null);
 
         this.connect('enter-event', () => {
             if (this._settingsHelper.get('ticker-pause-on-hover')) {
@@ -158,31 +169,52 @@ class PanelTicker extends PanelMenu.Button {
         const displayMode = this._settingsHelper.getDisplayModeForSymbol(targetSymObj.symbol);
         const isMasked = this._settingsHelper.get('hide-private-values');
 
-        let text = `${targetSymObj.displayLabel}: `;
+        const labelText = Formatter.escapeMarkup(targetSymObj.displayLabel);
+        let markup = `${labelText}: `;
 
         if (!quote) {
-            text += '...';
+            markup += '...';
         } else if (isMasked) {
-            text += '••••••';
+            markup += '••••••';
         } else {
-            const priceStr = Formatter.formatCurrency(quote.price, quote.currency);
-            const pctStr = Formatter.formatPercent(quote.changePercent);
-            const absStr = Formatter.formatChangeAbs(quote.change, quote.currency);
+            const priceStr = Formatter.escapeMarkup(Formatter.formatCurrency(quote.price, quote.currency));
+            const pctStr = Formatter.escapeMarkup(Formatter.formatPercent(quote.changePercent));
+            const absStr = Formatter.escapeMarkup(Formatter.formatChangeAbs(quote.change, quote.currency));
 
-            if (displayMode === 'price') text += priceStr;
-            else if (displayMode === 'change-pct') text += pctStr;
-            else if (displayMode === 'change-abs') text += absStr;
-            else text += `${priceStr} (${pctStr})`;
+            const isColorblind = this._settingsHelper.get('colorblind-mode');
+            const isUp = (quote.change ?? 0) >= 0;
+            const changeColor = isColorblind
+                ? (isUp ? '#64a8d8' : '#e09f58')
+                : (isUp ? '#60b08e' : '#e57373');
+
+            if (displayMode === 'price') {
+                markup += priceStr;
+            } else if (displayMode === 'change-pct') {
+                markup += `<span foreground="${changeColor}">${pctStr}</span>`;
+            } else if (displayMode === 'change-abs') {
+                markup += `<span foreground="${changeColor}">${absStr}</span>`;
+            } else {
+                markup += `${priceStr} <span foreground="${changeColor}">(${pctStr})</span>`;
+            }
         }
 
-        this._setLabelTextAnimated(text);
+        this._setLabelTextAnimated(markup);
         if (pinned === targetSymObj.symbol) this._pinIcon.show();
         else this._pinIcon.hide();
     }
 
     /** Gentle calm cross-fade when text changes. */
-    _setLabelTextAnimated(text) {
-        if (this._label.text === text) return;
+    _setLabelTextAnimated(markup) {
+        if (this._currentMarkup === markup) return;
+        this._currentMarkup = markup;
+
+        const applyMarkup = () => {
+            try {
+                this._label.clutter_text.set_markup(markup);
+            } catch (e) {
+                this._label.set_text(markup.replace(/<[^>]*>/g, ''));
+            }
+        };
 
         if (this.is_mapped() && this._label.is_visible()) {
             this._label.remove_all_transitions();
@@ -191,7 +223,7 @@ class PanelTicker extends PanelMenu.Button {
                 duration: 90,
                 mode: Clutter.AnimationMode.EASE_OUT_QUAD,
                 onComplete: () => {
-                    this._label.set_text(text);
+                    applyMarkup();
                     this._label.ease({
                         opacity: 255,
                         duration: 130,
@@ -200,13 +232,19 @@ class PanelTicker extends PanelMenu.Button {
                 }
             });
         } else {
-            this._label.set_text(text);
+            applyMarkup();
             this._label.opacity = 255;
         }
     }
 
     destroy() {
         this.stopTickerTimer();
+        if (this._settingsSignalIds) {
+            for (const id of this._settingsSignalIds) {
+                this._settingsHelper.disconnect(id);
+            }
+            this._settingsSignalIds = [];
+        }
         this._label.remove_all_transitions();
         super.destroy();
     }
